@@ -2,6 +2,7 @@ package org.sunbird.workflow.service.impl;
 
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -184,7 +185,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
                 StringBuilder builder = new StringBuilder(configuration.getCourseServiceHost());
                 if (wfRequest.getState().equalsIgnoreCase(Constants.SEND_FOR_PC_APPROVAL) && wfRequest.getServiceName().equalsIgnoreCase(Constants.BLENDED_PROGRAM_SERVICE_NAME)) {
                     builder.append(configuration.getAdminBlendedProgramEnrolEndPoint());
-                    requestBody.put(Constants.ENROLLED_DATE.toLowerCase(), wfRequest.getCreatedOn());
+                    requestBody.put(Constants.ENROLLED_DATE.toLowerCase(), new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT).format(new SimpleDateFormat(Constants.COMMON_DATE_FORMAT).parse(wfRequest.getCreatedOn().toString())));
                 } else {
                     builder.append(configuration.getAdminEnrolEndPoint());
                 }
