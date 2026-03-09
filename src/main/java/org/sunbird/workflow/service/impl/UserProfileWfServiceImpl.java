@@ -167,9 +167,11 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 						detailsList.add(detailsMap);
 						existingProfileDetail.put((String) wfRequestParamObj.get(Constants.FIELD_KEY), detailsList);
 					} else {
-						logger.error("profile element to be updated is neither arraylist nor hashmap");
-						return null;
+						existingProfileDetail.put((String) wfRequestParamObj.get(Constants.FIELD_KEY), wfRequestParamObj.get(Constants.TO_VALUE));
 					}
+				} else {
+					logger.error("profile element to be updated is neither arraylist nor hashmap");
+					return null;
 				}
 				Map<String, Object> objectMap = (Map<String, Object>) wfRequestParamObj.get(Constants.TO_VALUE);
 				for (Map.Entry entry : objectMap.entrySet())
