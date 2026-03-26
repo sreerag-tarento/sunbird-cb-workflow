@@ -129,6 +129,10 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 			if (null != updateUserApiResp && !Constants.OK.equals(updateUserApiResp.get(Constants.RESPONSE_CODE))) {
 				logger.error("user update failed" + ((Map<String, Object>) updateUserApiResp.get(Constants.PARAMS)).get(Constants.ERROR_MESSAGE));
 				failedCase(wfRequest);
+			} else {
+				String cacheKey = Constants.USER_BASIC_PROFILE_REDIS_KEY_PREFIX + existingUserResponse.get(Constants.USER_ID);
+				logger.info("User profile updated. Invalidating basicProfile cache for userId: {}", existingUserResponse.get(Constants.USER_ID));
+				redisCacheMgr.deleteCache(cacheKey);
 			}
 		} catch (Exception e) {
 			logger.error("Exception occurred : ", e);
@@ -629,16 +633,9 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 				logger.error("User update failed: {}", updateError);
 				failedCaseProfileUpdate(wfRequests, errorMessage);
 			} else {
-				logger.info("Caching basic profile data for userId: {}", userId);
-				Map<String, Object> cacheData = new HashMap<>();
-				cacheData.put(Constants.ROOT_ORG_ID, userDetails.getOrDefault(Constants.ROOT_ORG_ID, ""));
-				cacheData.put(Constants.FIRST_NAME_CAMEL_CASE, userDetails.getOrDefault(Constants.FIRST_NAME_CAMEL_CASE, ""));
-				cacheData.put(Constants.ID, userDetails.getOrDefault(Constants.ID, ""));
-				cacheData.put(Constants.PROFILE_DETAILS, profileDetails);
-				cacheData.put(Constants.CHANNEL, userDetails.getOrDefault(Constants.CHANNEL, ""));
-				cacheData.put(Constants.USERNAME_LOWERCASE, userDetails.getOrDefault(Constants.USER_NAME,""));
-				redisCacheMgr.putInBasicProfileCache(Constants.BASIC_PROFILE_KEY+userId, mapper.writeValueAsString(cacheData), configuration.getBasicProfileCacheTtl());
-				logger.info("sucessfully updated user profile for userId: {}", userId);
+				String cacheKey = Constants.USER_BASIC_PROFILE_REDIS_KEY_PREFIX + userId;
+				logger.info("User profile updated. Invalidating basicProfile cache for userId: {}", userId);
+				redisCacheMgr.deleteCache(cacheKey);
 			}
 		} catch (Exception e) {
 			logger.error("Error updating user profile for userId: {}", userId, e);

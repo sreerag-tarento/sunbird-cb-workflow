@@ -440,6 +440,6 @@ public class Constants {
     public static final String PC = "PC";
     public static final String MDO = "MDO";
     public static final String SELF = "SELF";
-
+	public static final String USER_BASIC_PROFILE_REDIS_KEY_PREFIX="user:basicProfile:";
 
 }
