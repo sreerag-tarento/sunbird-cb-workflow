@@ -1213,7 +1213,7 @@ public class WorkflowServiceImpl implements Workflowservice {
 		String cacheKey = Constants.REDIS_COMMON_KEY + wid + ":" + serviceName + ":" + status;
 
 		try {
-			String cachedValue = redisCacheMgr.get(cacheKey);
+			String cachedValue = redisCacheMgr.get(cacheKey, 1);
 			if (cachedValue != null) {
 				log.info("Cache HIT for key: {}", cacheKey);
 				return new ObjectMapper().readValue(cachedValue, Response.class);
@@ -1251,7 +1251,7 @@ public class WorkflowServiceImpl implements Workflowservice {
 			if (!result.isEmpty()) {
 				log.info("Caching response for key: {} with ttl: {}", cacheKey, configuration.getWorkflowCacheTtl());
 				String json = new ObjectMapper().writeValueAsString(response);
-				redisCacheMgr.put(cacheKey, json, configuration.getWorkflowCacheTtl());
+				redisCacheMgr.put(cacheKey, json, configuration.getWorkflowCacheTtl(), 1);
 			}
 		} catch (Exception e) {
 			log.error("Exception occurred while parsing wf fields!", e);
