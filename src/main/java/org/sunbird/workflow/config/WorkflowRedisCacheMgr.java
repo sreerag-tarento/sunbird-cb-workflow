@@ -16,8 +16,9 @@ public class WorkflowRedisCacheMgr {
 
     private final Logger logger = LoggerFactory.getLogger(WorkflowRedisCacheMgr.class);
 
-        public void put(String key, String value, int ttl) {
+        public void put(String key, String value, int ttl, int index) {
             try (Jedis jedis = jedisPool.getResource()) {
+                jedis.select(index);
                 jedis.set(key, value);
                 jedis.expire(key, ttl);
                 logger.debug("Cache_key_value " + key + " is saved in redis");
@@ -26,8 +27,9 @@ public class WorkflowRedisCacheMgr {
             }
         }
 
-        public String get(String key) {
+        public String get(String key, int index) {
             try (Jedis jedis = jedisPool.getResource()) {
+                jedis.select(index);
                 return jedis.get(key);
             } catch (Exception e) {
                 logger.error("An Error Occurred while getting content from cache", e);
