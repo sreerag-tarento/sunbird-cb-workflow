@@ -272,6 +272,9 @@ public class Configuration {
     @Value("${user.profile.cache.ttl}")
     private int basicProfileCacheTtl;
 
+    @Value("${workflow.cache.ttl}")
+    private int workflowCacheTtl;
+
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
     }
@@ -943,4 +946,7 @@ public class Configuration {
 
     public void setBasicProfileCacheTtl(int basicProfileCacheTtl) { this.basicProfileCacheTtl = basicProfileCacheTtl; }
 
+    public int getWorkflowCacheTtl() {
+        return workflowCacheTtl;
+    }
 }

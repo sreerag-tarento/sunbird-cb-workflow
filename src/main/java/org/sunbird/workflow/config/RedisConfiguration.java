@@ -18,6 +18,12 @@ public class RedisConfiguration {
     @Value("${redis.data.port}")
     private String redisDataPort;
 
+    @Value("${redis.workflow.host.name}")
+    private String workflowRedisHostName;
+
+    @Value("${redis.workflow.port}")
+    private String workflowRedisPort;
+
     public String getGetRedisHostName() {
         return getRedisHostName;
     }
@@ -48,5 +54,22 @@ public class RedisConfiguration {
 
     public void setRedisDataPort(String redisDataPort) {
         this.redisDataPort = redisDataPort;
+    }
+
+
+    public String getWorkflowRedisHostName() {
+        return workflowRedisHostName;
+    }
+
+    public void setWorkflowRedisHostName(String workflowRedisHostName) {
+        this.workflowRedisHostName = workflowRedisHostName;
+    }
+
+    public String getWorkflowRedisPort() {
+        return workflowRedisPort;
+    }
+
+    public void setWorkflowRedisPort(String workflowRedisPort) {
+        this.workflowRedisPort = workflowRedisPort;
     }
 }
