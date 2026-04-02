@@ -24,6 +24,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.sunbird.workflow.config.Configuration;
 import org.sunbird.workflow.config.Constants;
+import org.sunbird.workflow.config.WorkflowRedisCacheMgr;
 import org.sunbird.workflow.exception.ApplicationException;
 import org.sunbird.workflow.exception.BadRequestException;
 import org.sunbird.workflow.exception.InvalidDataInputException;
@@ -97,6 +98,9 @@ public class WorkflowServiceImpl implements Workflowservice {
 
 	@Autowired
 	NotificationTriggerService notificationTriggerService;
+
+	@Autowired
+	WorkflowRedisCacheMgr redisCacheMgr;
 
 	/**
 	 * Change the status of workflow application
@@ -1198,6 +1202,25 @@ public class WorkflowServiceImpl implements Workflowservice {
 		Response response = new Response();
 		response.put(Constants.STATUS, HttpStatus.OK);
 		response.put(Constants.MESSAGE, Constants.SUCCESSFUL);
+		String serviceName = StringUtils.isEmpty(criteria.getServiceName())
+				? Constants.ALL
+				: criteria.getServiceName();
+
+		String status = StringUtils.isEmpty(criteria.getApplicationStatus())
+				? Constants.ALL
+				: criteria.getApplicationStatus();
+
+		String cacheKey = Constants.REDIS_COMMON_KEY + wid + ":" + serviceName + ":" + status;
+
+		try {
+			String cachedValue = redisCacheMgr.get(cacheKey);
+			if (cachedValue != null) {
+				log.info("Cache HIT for key: {}", cacheKey);
+				return new ObjectMapper().readValue(cachedValue, Response.class);
+			}
+		} catch (Exception e) {
+			log.error("Error reading workflow cache", e);
+		}
 		try {
 			List<Object[]> updatedFieldValues = null;
 			if (!StringUtils.isEmpty(criteria.getApplicationStatus())) {
@@ -1225,6 +1248,11 @@ public class WorkflowServiceImpl implements Workflowservice {
 				}
 			}
 			response.put(Constants.DATA, result);
+			if (!result.isEmpty()) {
+				log.info("Caching response for key: {} with ttl: {}", cacheKey, configuration.getWorkflowCacheTtl());
+				String json = new ObjectMapper().writeValueAsString(response);
+				redisCacheMgr.put(cacheKey, json, configuration.getWorkflowCacheTtl());
+			}
 		} catch (Exception e) {
 			log.error("Exception occurred while parsing wf fields!", e);
 			response.put(Constants.DATA, new ArrayList<>());
