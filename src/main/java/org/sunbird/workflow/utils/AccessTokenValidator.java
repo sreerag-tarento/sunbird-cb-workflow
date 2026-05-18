@@ -12,6 +12,7 @@ import org.sunbird.workflow.config.Constants;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -102,5 +103,21 @@ public class AccessTokenValidator {
             }
         }
         return clientAccessTokenId;
+    }
+
+    public List<String> fetchUserRolesFromToken(String accessToken) {
+        try {
+            Map<String, Object> tokenBody = validateToken(accessToken);
+            if (MapUtils.isEmpty(tokenBody)) {
+                return Collections.emptyList();
+            }
+            List<String> roles = (List<String>) tokenBody.get("user_roles");
+            logger.info("Roles from token: {}", roles);
+            return roles != null ? roles : Collections.emptyList();
+        } catch (Exception ex) {
+            logger.error("Exception while fetching roles from token: {}",
+                    ex.getMessage());
+        }
+        return Collections.emptyList();
     }
 }

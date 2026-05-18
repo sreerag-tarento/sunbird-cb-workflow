@@ -145,5 +145,18 @@ public interface WfStatusRepo extends JpaRepository<WfStatusEntity, String> {
     List<WfStatusEntity> findActiveWorkflows(String applicationId, String userId, Boolean inWorkflow);
 
 
+    Page<WfStatusEntity> findByServiceName(String serviceName, Pageable pageable);
+
+    Page<WfStatusEntity> findByServiceNameAndCurrentStatus(String serviceName, String currentStatus, Pageable pageable);
+
+    Page<WfStatusEntity> findByServiceNameAndDeptName(
+            String serviceName, String deptName, Pageable pageable);
+
+    Page<WfStatusEntity> findByServiceNameAndCurrentStatusAndDeptName(
+            String serviceName, String currentStatus,
+            String deptName, Pageable pageable);
+
+    @Query(value = "select * from wingspan.wf_status where userid = ?1 and service_name = ?2 order by lastupdated_on desc", nativeQuery = true)
+    List<WfStatusEntity> findByUserIdAndServiceNameOrderByLastUpdatedOnDesc(String userId, String serviceName);
 }
 

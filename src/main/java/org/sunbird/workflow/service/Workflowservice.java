@@ -60,5 +60,5 @@ public interface Workflowservice {
 
     public Response getUserProfileApprovalRequest(String rootOrg, String org, SearchCriteria searchCriteria, String rootOrgId);
 
-
+    public Response getAiAssessmentRequests(SearchCriteria criteria);
 }

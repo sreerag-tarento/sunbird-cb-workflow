@@ -1,6 +1,7 @@
 package org.sunbird.workflow.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class WorkFlowControllerV2 {
 
     @Autowired
+    @Qualifier("workflowServiceImpl")
     private Workflowservice workflowService;
 
     @Autowired

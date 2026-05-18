@@ -3,6 +3,7 @@ package org.sunbird.workflow.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.sunbird.workflow.config.Configuration;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class OrganisationWorkFlowServiceImpl implements OrganisationWorkFlowService {
 
     @Autowired
+    @Qualifier("workflowServiceImpl")
     private Workflowservice workflowService;
 
     @Autowired

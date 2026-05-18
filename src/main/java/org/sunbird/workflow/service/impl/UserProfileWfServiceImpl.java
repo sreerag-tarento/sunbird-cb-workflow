@@ -15,6 +15,7 @@ import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -39,9 +40,6 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 
 	private Logger logger = LoggerFactory.getLogger(UserProfileWfServiceImpl.class);
 
-	@Autowired
-	@Lazy
-	private Workflowservice workflowservice;
 
 	@Autowired
 	private RequestServiceImpl requestServiceImpl;
@@ -59,6 +57,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 	private WfStatusRepo wfStatusRepo;
 
 	@Autowired
+	@Qualifier("workflowServiceImpl")
 	WorkflowServiceImpl workflowService;
 
 	@Autowired
@@ -308,6 +307,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 								record.put(Constants.FIRST_NAME, personalDetails.get(Constants.FIRSTNAME));
 								record.put(Constants.EMAIL, personalDetails.get(Constants.PRIMARY_EMAIL));
 								record.put(Constants.ROOT_ORG_ID,content.get(Constants.ROOT_ORG_ID));
+								record.put(Constants.MOBILE, personalDetails.get(Constants.MOBILE));
 							}
 							Map<String, Object> additionalProperties = (Map<String, Object>) profileDetails.get(Constants.ADDITIONAL_PROPERTIES);
 							if (MapUtils.isNotEmpty(additionalProperties)) {
@@ -482,7 +482,9 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 		Map<String, Object> requestObject = new HashMap<>();
 		Map<String, Object> request = new HashMap<>();
 		Map<String, Object> filters = new HashMap<>();
-		filters.put("rootOrgId", rootOrgId);
+		if (StringUtils.isNotBlank(rootOrgId)) {
+			filters.put("rootOrgId", rootOrgId);
+		}
 		filters.put("organisations.roles", roles);
 		request.put("filters", filters);
 		request.put(Constants.FIELDS, configuration.getMdoAdminSearchFields());

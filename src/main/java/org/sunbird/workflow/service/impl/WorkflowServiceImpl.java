@@ -13,6 +13,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -257,8 +258,29 @@ public class WorkflowServiceImpl implements Workflowservice {
 				}
 				wfRequest.setPreviousRootOrgId(rootOrgId);
 			}
-			producer.push(configuration.getWorkFlowNotificationTopic(), wfRequest);
-			producer.push(configuration.getWorkflowApplicationTopic(), wfRequest);
+
+			if (Constants.AI_ASSESSMENT_SERVICE_NAME
+					.equalsIgnoreCase(applicationStatus.getServiceName())) {
+
+				if (Constants.APPROVED
+						.equalsIgnoreCase(applicationStatus.getCurrentStatus())) {
+					producer.push(configuration.getAiAssessmentTopic(), wfRequest);
+					log.info("Pushed to AI Assessment topic for APPROVED userId: {}",
+							wfRequest.getUserId());
+
+				} else if (Constants.PENDING
+						.equalsIgnoreCase(applicationStatus.getCurrentStatus())
+						|| Constants.REJECTED
+						.equalsIgnoreCase(applicationStatus.getCurrentStatus())) {
+					producer.push(configuration.getWorkFlowNotificationTopic(), wfRequest);
+					log.info("Pushed to notification topic for state: {} userId: {}",
+							applicationStatus.getCurrentStatus(), wfRequest.getUserId());
+				}
+
+			} else {
+				producer.push(configuration.getWorkFlowNotificationTopic(), wfRequest);
+				producer.push(configuration.getWorkflowApplicationTopic(), wfRequest);
+			}
 
 			StringBuilder url = new StringBuilder(configuration.getLmsServiceHost()).append(configuration.getLmsUserSearchEndPoint());
 			Map<String, Object> request = buildUserSearchRequest(wfRequest.getUserId());
@@ -927,6 +949,9 @@ public class WorkflowServiceImpl implements Workflowservice {
 					break;
 				case Constants.TWO_STEP_PC_AND_MDO_APPROVAL:
 					uri.append(configuration.getLmsServiceHost()).append(configuration.getMultilevelBPEnrolEndPoint()).append(Constants.TWO_STEP_PC_AND_MDO_APPROVAL);
+					break;
+				case Constants.AI_ASSESSMENT_SERVICE_NAME:
+					uri.append(configuration.getLmsServiceHost()).append(configuration.getLmsServiceConfigPath()).append(Constants.ONE_STEP_SPV_APPROVAL);
 					break;
 				default:
 					break;
@@ -1915,5 +1940,100 @@ public class WorkflowServiceImpl implements Workflowservice {
 			return null;
 		}
 		return (Map<String, Object>) userResponseObj;
+	}
+
+	public Response getAiAssessmentRequests(SearchCriteria criteria) {
+		try {
+			Pageable pageable = getPageReqForApplicationSearch(criteria);
+			pageable = PageRequest.of(
+					pageable.getPageNumber(),
+					pageable.getPageSize(),
+					Sort.by(Sort.Direction.DESC, "createdOn"));
+
+			boolean hasStatus = !StringUtils.isEmpty(criteria.getApplicationStatus());
+			boolean hasDept = !StringUtils.isEmpty(criteria.getDeptName());
+
+			Page<WfStatusEntity> wfStatusPage;
+
+			if (hasStatus && hasDept) {
+				wfStatusPage = wfStatusRepo
+						.findByServiceNameAndCurrentStatusAndDeptName(
+								Constants.AI_ASSESSMENT_SERVICE_NAME,
+								criteria.getApplicationStatus(),
+								criteria.getDeptName(), pageable);
+
+			} else if (hasStatus) {
+				wfStatusPage = wfStatusRepo
+						.findByServiceNameAndCurrentStatus(
+								Constants.AI_ASSESSMENT_SERVICE_NAME,
+								criteria.getApplicationStatus(), pageable);
+
+			} else if (hasDept) {
+				wfStatusPage = wfStatusRepo
+						.findByServiceNameAndDeptName(
+								Constants.AI_ASSESSMENT_SERVICE_NAME,
+								criteria.getDeptName(), pageable);
+
+			} else {
+				wfStatusPage = wfStatusRepo
+						.findByServiceName(
+								Constants.AI_ASSESSMENT_SERVICE_NAME, pageable);
+			}
+
+			List<WfStatusEntity> entities = wfStatusPage.getContent();
+			log.info("Paginated records count: {}", entities.size());
+
+			if (CollectionUtils.isEmpty(entities)) {
+				Response response = new Response();
+				response.put(Constants.MESSAGE, Constants.SUCCESSFUL);
+				response.put(Constants.DATA, new ArrayList<>());
+				response.put(Constants.COUNT, 0);
+				response.put(Constants.STATUS, HttpStatus.OK);
+				return response;
+			}
+
+			Map<String, List<WfStatusEntity>> groupedEntities = entities
+					.stream()
+					.collect(Collectors.groupingBy(
+							WfStatusEntity::getApplicationId,
+							LinkedHashMap::new,
+							Collectors.toList()));
+
+			List<Map<String, Object>> userProfiles = userProfileWfService
+					.enrichUserData(groupedEntities, null);
+
+			userProfiles.sort((a, b) -> {
+				List<WfStatusEntity> wfInfoA = (List<WfStatusEntity>) a.get("wfInfo");
+				List<WfStatusEntity> wfInfoB = (List<WfStatusEntity>) b.get("wfInfo");
+
+				long latestA = wfInfoA.stream()
+						.map(WfStatusEntity::getCreatedOn)
+						.filter(Objects::nonNull)
+						.mapToLong(Date::getTime)
+						.max()
+						.orElse(0L);
+
+				long latestB = wfInfoB.stream()
+						.map(WfStatusEntity::getCreatedOn)
+						.filter(Objects::nonNull)
+						.mapToLong(Date::getTime)
+						.max()
+						.orElse(0L);
+
+				return Long.compare(latestB, latestA);
+			});
+
+			Response response = new Response();
+			response.put(Constants.MESSAGE, Constants.SUCCESSFUL);
+			response.put(Constants.DATA, userProfiles);
+			response.put(Constants.COUNT, wfStatusPage.getTotalElements());
+			response.put(Constants.STATUS, HttpStatus.OK);
+			return response;
+
+		} catch (Exception e) {
+			log.error("Error fetching AI Assessment requests", e);
+			throw new ApplicationException(
+					"Error fetching AI Assessment requests", e);
+		}
 	}
 }

@@ -275,6 +275,18 @@ public class Configuration {
     @Value("${workflow.cache.ttl}")
     private int workflowCacheTtl;
 
+    @Value("${ai.assessment.topic}")
+    private String aiAssessmentTopic;
+
+    @Value("${lms.service.config.path}")
+    private String lmsServiceConfigPath;
+
+    @Value("${ai.assessment.initiate.roles}")
+    private String aiAssessmentInitiateRoles;
+
+    @Value("${ai.assessment.approve.reject.roles}")
+    private String aiAssessmentApproveRejectRoles;
+
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
     }
@@ -948,5 +960,21 @@ public class Configuration {
 
     public int getWorkflowCacheTtl() {
         return workflowCacheTtl;
+    }
+
+    public String getAiAssessmentTopic() {
+        return aiAssessmentTopic;
+    }
+
+    public String getLmsServiceConfigPath() {
+        return lmsServiceConfigPath;
+    }
+
+    public List<String> getAiAssessmentInitiateRoles() {
+        return Arrays.asList(aiAssessmentInitiateRoles.split(","));
+    }
+
+    public List<String> getAiAssessmentApproveRejectRoles() {
+        return Arrays.asList(aiAssessmentApproveRejectRoles.split(","));
     }
 }

@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
     private Logger logger = LoggerFactory.getLogger(BPWorkFlowServiceImpl.class);
 
     @Autowired
+    @Qualifier("workflowServiceImpl")
     private Workflowservice workflowService;
 
     @Autowired

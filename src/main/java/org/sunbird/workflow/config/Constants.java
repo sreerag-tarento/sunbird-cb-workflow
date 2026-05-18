@@ -442,5 +442,20 @@ public class Constants {
     public static final String SELF = "SELF";
 	public static final String USER_BASIC_PROFILE_REDIS_KEY_PREFIX="user:basicProfile:";
 	public static final String ALL = "ALL";
+	public static final String AI_ASSESSMENT_SERVICE_NAME = "ai_assessment";
+	public static final String ONE_STEP_SPV_APPROVAL="oneStepSPVApproval";
+	public static final String PENDING = "PENDING";
+	public static final String AI_ASSESSMENT_SPV_SUBJECT = "AI Assessment Access Request - Action Required";
+	public static final String AI_ASSESSMENT_SPV_BODY = "User #userName has requested access to AI Assessment Tool. Please review and take action.";
+	public static final String AI_ASSESSMENT_USER_APPROVED_SUBJECT = "AI Assessment Tool Access - Approved";
+	public static final String AI_ASSESSMENT_USER_APPROVED_BODY = "Your request to access AI Assessment Tool has been approved. You can now access the tool.";
+	public static final String AI_ASSESSMENT_USER_REJECTED_SUBJECT = "AI Assessment Tool Access - Rejected";
+	public static final String AI_ASSESSMENT_USER_REJECTED_BODY = "Your request to access AI Assessment Tool has been rejected.";
+	public static final String SPV_PUBLISHER = "SPV_PUBLISHER";
+	public static final String AI_ASSESSMENT_CREATOR = "AI_ASSESSMENT_CREATOR";
+	public static final String EMAIL_LIST = "emailList";
+	public static final String EMAIL_TO = "emailTo";
+	public static final String SUBJECT = "subject";
+	public static final String BODY = "body";
 
 }

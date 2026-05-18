@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -30,6 +31,8 @@ import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.sunbird.workflow.config.Constants.*;
+
 @Service
 public class NotificationServiceImpl {
 
@@ -49,6 +52,7 @@ public class NotificationServiceImpl {
 	private ObjectMapper mapper;
 
 	@Autowired
+	@Qualifier("workflowServiceImpl")
 	private Workflowservice workflowservice;
 
 	@Autowired
@@ -581,5 +585,95 @@ public class NotificationServiceImpl {
 		} catch (Exception e) {
 			logger.error("Error sending notification to MDO admins", e);
 		}
+	}
+
+	public void sendAiAssessmentNotification(WfRequest wfRequest) {
+		WfStatusEntity wfStatusEntity = wfStatusRepo
+				.findByApplicationIdAndWfId(
+						wfRequest.getApplicationId(),
+						wfRequest.getWfId());
+
+		String currentStatus = wfStatusEntity.getCurrentStatus();
+		logger.info("AI Assessment notification for status: {} userId: {}",
+				currentStatus, wfRequest.getUserId());
+
+		if (Constants.PENDING.equalsIgnoreCase(currentStatus)) {
+			sendNotificationToSPV(wfRequest, wfStatusEntity);
+
+		} else if (Constants.APPROVED.equalsIgnoreCase(currentStatus)
+				|| Constants.REJECTED.equalsIgnoreCase(currentStatus)) {
+			sendNotificationToAiAssessmentUser(wfRequest, wfStatusEntity);
+		}
+	}
+
+	private void sendNotificationToSPV(
+			WfRequest wfRequest, WfStatusEntity wfStatusEntity) {
+
+		List<String> spvEmailList = userProfileWfService
+				.getMdoAdminAndPCDetails(
+						null,
+						Collections.singletonList(Constants.SPV_PUBLISHER));
+
+		if (CollectionUtils.isEmpty(spvEmailList)) {
+			logger.warn("No SPV emails found for rootOrgId: {}",
+					wfRequest.getRootOrgId());
+			return;
+		}
+
+		HashMap<String, Object> usersObj = userProfileWfService
+				.getUsersResult(Collections.singleton(wfRequest.getUserId()));
+		Map<String, Object> userInfo = (Map<String, Object>) usersObj
+				.get(wfRequest.getUserId());
+		String userName = (String) userInfo.get(Constants.FIRST_NAME);
+
+		String body = AI_ASSESSMENT_SPV_BODY
+				.replace(USER_NAME_TAG, userName);
+
+		if (StringUtils.isNotBlank(wfRequest.getComment())) {
+			body = body + " Comment: <b>" + wfRequest.getComment() + "</b>.";
+		}
+
+		Map<String, Object> mailNotificationDetails = new HashMap<>();
+		mailNotificationDetails.put(EMAIL_LIST, spvEmailList);
+		mailNotificationDetails.put(EMAIL_TO, SPV_PUBLISHER);
+		mailNotificationDetails.put(SUBJECT, AI_ASSESSMENT_SPV_SUBJECT);
+		mailNotificationDetails.put(BODY, body);
+
+		sendNotificationEmail(mailNotificationDetails);
+		logger.info("SPV notified for AI Assessment request userId: {}",
+				wfRequest.getUserId());
+	}
+
+
+	private void sendNotificationToAiAssessmentUser(
+			WfRequest wfRequest, WfStatusEntity wfStatusEntity) {
+
+		HashMap<String, Object> usersObj = userProfileWfService
+				.getUsersResult(Collections.singleton(wfRequest.getUserId()));
+		Map<String, Object> userInfo = (Map<String, Object>) usersObj
+				.get(wfRequest.getUserId());
+
+		String currentStatus = wfStatusEntity.getCurrentStatus();
+		String subject = Constants.APPROVED.equalsIgnoreCase(currentStatus)
+				? AI_ASSESSMENT_USER_APPROVED_SUBJECT
+				: AI_ASSESSMENT_USER_REJECTED_SUBJECT;
+		String body = Constants.APPROVED.equalsIgnoreCase(currentStatus)
+				? AI_ASSESSMENT_USER_APPROVED_BODY
+				: AI_ASSESSMENT_USER_REJECTED_BODY;
+
+		if (StringUtils.isNotBlank(wfRequest.getComment())) {
+			body = body + " Comment: <b>" + wfRequest.getComment() + "</b>.";
+		}
+
+		Map<String, Object> mailNotificationDetails = new HashMap<>();
+		mailNotificationDetails.put(EMAIL_LIST,
+				Collections.singletonList(userInfo.get(Constants.EMAIL)));
+		mailNotificationDetails.put(EMAIL_TO, userInfo.get(Constants.FIRST_NAME));
+		mailNotificationDetails.put(SUBJECT, subject);
+		mailNotificationDetails.put(BODY, body);
+
+		sendNotificationEmail(mailNotificationDetails);
+		logger.info("User notified for AI Assessment {} userId: {}",
+				currentStatus, wfRequest.getUserId());
 	}
 }

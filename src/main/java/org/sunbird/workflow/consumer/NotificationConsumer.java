@@ -85,6 +85,9 @@ public class NotificationConsumer {
 				case Constants.USER_REGISTRATION_SERVICE_NAME:
 					// nothing to do
 					break;
+				case Constants.AI_ASSESSMENT_SERVICE_NAME:
+					notificationService.sendAiAssessmentNotification(wfRequest);
+					break;
 				default:
 					logger.error("Unsupported ServiceName in WFRequest.");
 					break;
