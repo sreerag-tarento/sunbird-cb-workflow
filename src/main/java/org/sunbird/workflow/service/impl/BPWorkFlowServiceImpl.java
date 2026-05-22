@@ -373,9 +373,9 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
 
         if (Constants.BLENDED_PROGRAM_SERVICE_NAME.equalsIgnoreCase(serviceName)) {
             LocalDate batchStartLocalDate = batchStartDate.toInstant()
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(ZoneId.of(configuration.getSunbirdTimeZone()))
                     .toLocalDate();
-            LocalDate currentLocalDate = LocalDate.now();
+            LocalDate currentLocalDate = LocalDate.now(ZoneId.of(configuration.getSunbirdTimeZone()));
             logger.info("Batch Start LocalDate: {}, Current LocalDate: {}", batchStartLocalDate, currentLocalDate);
             return !batchStartLocalDate.isBefore(currentLocalDate);
         }
