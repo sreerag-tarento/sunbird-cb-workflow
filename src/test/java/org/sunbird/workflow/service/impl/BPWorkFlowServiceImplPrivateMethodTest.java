@@ -529,11 +529,7 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         Date today = Date.from(LocalDate.now(APPLICATION_TIMEZONE).atStartOfDay(APPLICATION_TIMEZONE).toInstant());
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, today);
-
-        // Execute
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
-
-        // Assert
         assertTrue(result, "Blended program enrollment should be allowed on the same day as start date");
     }
 
@@ -614,11 +610,7 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         Date futureDate = new Date(System.currentTimeMillis() + 2000);
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, futureDate);
-
-        // Execute with a different service name
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, "regularprogram");
-
-        // Assert
         assertTrue(result, "Other services should allow enrollment for strictly future start dates");
     }
 
@@ -627,15 +619,10 @@ class BPWorkFlowServiceImplPrivateMethodTest {
      */
     @Test
     void testValidateBatchStartDate_OtherService_PastDate_ShouldReturnFalse() throws Exception {
-        // Setup: Start date is 1 day in the past
         Date pastDate = new Date(System.currentTimeMillis() - 86400000);
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, pastDate);
-
-        // Execute with a different service name
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, "regularprogram");
-
-        // Assert
         assertFalse(result, "Other services should NOT allow enrollment for past start dates");
     }
 
@@ -648,11 +635,7 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         Date today = new Date();
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, today);
-
-        // Execute with null service name
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, null);
-
-        // Assert
         assertFalse(result, "Null service name should use default behavior (not allow same day)");
     }
 
@@ -661,15 +644,10 @@ class BPWorkFlowServiceImplPrivateMethodTest {
      */
     @Test
     void testValidateBatchStartDate_BlendedProgram_MidnightToday_ShouldReturnTrue() throws Exception {
-        // Setup: Start date is exactly midnight today (IST)
         Date midnight = Date.from(LocalDate.now(APPLICATION_TIMEZONE).atStartOfDay(APPLICATION_TIMEZONE).toInstant());
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, midnight);
-
-        // Execute
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
-
-        // Assert
         assertTrue(result, "Blended program should allow enrollment even at midnight IST on start date");
     }
 
@@ -678,15 +656,11 @@ class BPWorkFlowServiceImplPrivateMethodTest {
      */
     @Test
     void testValidateBatchStartDate_BlendedProgram_EndOfToday_ShouldReturnTrue() throws Exception {
-        // Setup: Start date is at 23:59:59 today (IST)
         Date endOfDay = Date.from(LocalDate.now(APPLICATION_TIMEZONE).atTime(23, 59, 59).atZone(APPLICATION_TIMEZONE).toInstant());
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, endOfDay);
 
-        // Execute
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
-
-        // Assert
         assertTrue(result, "Blended program should allow enrollment at any time on start date (IST)");
     }
 
@@ -696,19 +670,12 @@ class BPWorkFlowServiceImplPrivateMethodTest {
      */
     @Test
     void testValidateBatchStartDate_BlendedProgram_ISTTimezone_ShouldReturnTrue() throws Exception {
-        // Setup: Use specific date in IST timezone
-        // When Cassandra stores 2026-05-19 00:00:00.000000+0000 (midnight UTC)
-        // It converts to 2026-05-19 05:30:00 IST
         LocalDate specificDate = LocalDate.now(APPLICATION_TIMEZONE);
         Date istDate = Date.from(specificDate.atStartOfDay(APPLICATION_TIMEZONE).toInstant());
 
         Map<String, Object> courseBatchDetails = new HashMap<>();
         courseBatchDetails.put(Constants.START_DATE, istDate);
-
-        // Execute
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
-
-        // Assert
         assertTrue(result, "Should correctly handle dates in IST timezone (Asia/Kolkata)");
     }
 }
