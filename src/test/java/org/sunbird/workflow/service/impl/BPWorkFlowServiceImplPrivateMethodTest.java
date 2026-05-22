@@ -16,6 +16,8 @@ import org.sunbird.workflow.postgres.repo.WfStatusRepo;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -498,5 +500,185 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         var field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
+    }
+
+    /**
+     * Helper method to invoke the private validateBatchStartDate method via reflection
+     */
+    private boolean invokeValidateBatchStartDate(Map<String, Object> courseBatchDetails, String serviceName) throws Exception {
+        Method method = BPWorkFlowServiceImpl.class.getDeclaredMethod(
+                "validateBatchStartDate", Map.class, String.class);
+        method.setAccessible(true);
+        return (boolean) method.invoke(bpWorkFlowService, courseBatchDetails, serviceName);
+    }
+
+    /**
+     * Test: Blended program enrollment allowed on the same day as start date
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgram_SameDay_ShouldReturnTrue() throws Exception {
+        // Setup: Start date is today
+        Date today = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, today);
+
+        // Execute
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
+
+        // Assert
+        assertTrue(result, "Blended program enrollment should be allowed on the same day as start date");
+    }
+
+    /**
+     * Test: Blended program enrollment allowed for future start dates
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgram_FutureDate_ShouldReturnTrue() throws Exception {
+        // Setup: Start date is 5 days in the future
+        Date futureDate = Date.from(LocalDate.now().plusDays(5).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, futureDate);
+
+        // Execute
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
+
+        // Assert
+        assertTrue(result, "Blended program enrollment should be allowed for future start dates");
+    }
+
+    /**
+     * Test: Blended program enrollment NOT allowed for past start dates
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgram_PastDate_ShouldReturnFalse() throws Exception {
+        // Setup: Start date is 3 days in the past
+        Date pastDate = Date.from(LocalDate.now().minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, pastDate);
+
+        // Execute
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
+
+        // Assert
+        assertFalse(result, "Blended program enrollment should NOT be allowed for past start dates");
+    }
+
+    /**
+     * Test: Blended program with case-insensitive service name match
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgram_CaseInsensitive_ShouldReturnTrue() throws Exception {
+        // Setup: Start date is today, service name in different case
+        Date today = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, today);
+
+        // Execute with different case
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, "BLENDEDPROGRAM");
+
+        // Assert
+        assertTrue(result, "Service name comparison should be case-insensitive");
+    }
+
+    /**
+     * Test: Other services (non-blended) - enrollment NOT allowed on same day as start date
+     */
+    @Test
+    void testValidateBatchStartDate_OtherService_SameDay_ShouldReturnFalse() throws Exception {
+        // Setup: Start date is today
+        Date today = new Date();
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, today);
+
+        // Execute with a different service name
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, "regularprogram");
+
+        // Assert
+        assertFalse(result, "Other services should NOT allow enrollment on the same day as start date");
+    }
+
+    /**
+     * Test: Other services - enrollment allowed for strictly future start dates
+     */
+    @Test
+    void testValidateBatchStartDate_OtherService_FutureDate_ShouldReturnTrue() throws Exception {
+        // Setup: Start date is 1 second in the future
+        Date futureDate = new Date(System.currentTimeMillis() + 2000); // 2 seconds in future
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, futureDate);
+
+        // Execute with a different service name
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, "regularprogram");
+
+        // Assert
+        assertTrue(result, "Other services should allow enrollment for strictly future start dates");
+    }
+
+    /**
+     * Test: Other services - enrollment NOT allowed for past start dates
+     */
+    @Test
+    void testValidateBatchStartDate_OtherService_PastDate_ShouldReturnFalse() throws Exception {
+        // Setup: Start date is in the past
+        Date pastDate = new Date(System.currentTimeMillis() - 86400000); // 1 day ago
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, pastDate);
+
+        // Execute with a different service name
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, "regularprogram");
+
+        // Assert
+        assertFalse(result, "Other services should NOT allow enrollment for past start dates");
+    }
+
+    /**
+     * Test: Blended program with null service name (should use default behavior)
+     */
+    @Test
+    void testValidateBatchStartDate_NullServiceName_ShouldUseDefaultBehavior() throws Exception {
+        // Setup: Start date is today
+        Date today = new Date();
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, today);
+
+        // Execute with null service name
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, null);
+
+        // Assert
+        assertFalse(result, "Null service name should use default behavior (not allow same day)");
+    }
+
+    /**
+     * Test: Blended program - boundary test with date at exact midnight
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgram_MidnightToday_ShouldReturnTrue() throws Exception {
+        // Setup: Start date is exactly midnight today
+        Date midnight = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, midnight);
+
+        // Execute
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
+
+        // Assert
+        assertTrue(result, "Blended program should allow enrollment even at midnight on start date");
+    }
+
+    /**
+     * Test: Blended program - boundary test with date at end of today
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgram_EndOfToday_ShouldReturnTrue() throws Exception {
+        // Setup: Start date is at 23:59:59 today
+        Date endOfDay = Date.from(LocalDate.now().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, endOfDay);
+
+        // Execute
+        boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
+
+        // Assert
+        assertTrue(result, "Blended program should allow enrollment at any time on start date");
     }
 }
