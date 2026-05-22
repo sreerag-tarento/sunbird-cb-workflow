@@ -376,6 +376,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate();
             LocalDate currentLocalDate = LocalDate.now();
+            logger.info("Batch Start LocalDate: {}, Current LocalDate: {}", batchStartLocalDate, currentLocalDate);
             return !batchStartLocalDate.isBefore(currentLocalDate);
         }
         return batchStartDate.after(new Date());
