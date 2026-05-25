@@ -40,6 +40,8 @@ import org.sunbird.workflow.utils.UserUtil;
 import java.io.*;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 @Service
@@ -355,7 +357,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         boolean nonEnrolmentState = configuration.getBpBatchFullValidationExcludeStates().contains(wfRequest.getAction());
         if(nonEnrolmentState)
             return "";
-        boolean batchStartDateValid = validateBatchStartDate(courseBatchDetails);
+        boolean batchStartDateValid = validateBatchStartDate(courseBatchDetails, wfRequest.getServiceName());
         if(!batchStartDateValid)
             return Constants.BATCH_START_DATE_ERROR;
         boolean batchSizeValidation =  validateBatchEnrolment(courseBatchDetails, getTotalApprovedUserCount(wfRequest), 0,
@@ -366,8 +368,17 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
     }
 
 
-    private boolean validateBatchStartDate(Map<String, Object> courseBatchDetails) {
-        Date batchStartDate = ((Date)courseBatchDetails.get(Constants.START_DATE));
+    private boolean validateBatchStartDate(Map<String, Object> courseBatchDetails, String serviceName) {
+        Date batchStartDate = ((Date) courseBatchDetails.get(Constants.START_DATE));
+
+        if (Constants.BLENDED_PROGRAM_SERVICE_NAME.equalsIgnoreCase(serviceName)) {
+            LocalDate batchStartLocalDate = batchStartDate.toInstant()
+                    .atZone(ZoneId.of(configuration.getSunbirdTimeZone()))
+                    .toLocalDate();
+            LocalDate currentLocalDate = LocalDate.now(ZoneId.of(configuration.getSunbirdTimeZone()));
+            logger.info("Batch Start LocalDate: {}, Current LocalDate: {}", batchStartLocalDate, currentLocalDate);
+            return !batchStartLocalDate.isBefore(currentLocalDate);
+        }
         return batchStartDate.after(new Date());
     }
 

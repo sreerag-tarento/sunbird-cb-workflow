@@ -287,6 +287,9 @@ public class Configuration {
     @Value("${ai.assessment.approve.reject.roles}")
     private String aiAssessmentApproveRejectRoles;
 
+    @Value("${sunbird_time_zone}")
+    private String sunbirdTimeZone;
+
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
     }
@@ -977,4 +980,8 @@ public class Configuration {
     public List<String> getAiAssessmentApproveRejectRoles() {
         return Arrays.asList(aiAssessmentApproveRejectRoles.split(","));
     }
+
+    public String getSunbirdTimeZone() { return sunbirdTimeZone; }
+
+    public void setSunbirdTimeZone(String sunbirdTimeZone) { this.sunbirdTimeZone = sunbirdTimeZone; }
 }
