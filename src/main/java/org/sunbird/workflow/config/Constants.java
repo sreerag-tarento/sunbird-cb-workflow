@@ -457,5 +457,7 @@ public class Constants {
 	public static final String EMAIL_TO = "emailTo";
 	public static final String SUBJECT = "subject";
 	public static final String BODY = "body";
+	public static final String PRIMARY_CATEGORY = "primaryCategory";
+	public static final String BLENDED_PROGRAM = "Blended Program";
 
 }

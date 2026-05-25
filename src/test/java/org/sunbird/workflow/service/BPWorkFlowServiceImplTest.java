@@ -236,7 +236,7 @@ class BPWorkFlowServiceImplTest {
         courseBatchDetails.put(Constants.BATCH_NAME, "Batch Name");
         courseBatchDetails.put(Constants.START_DATE, new Date());
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("BP_SERVICE");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "BP_SERVICE", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(new ArrayList<>());
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20);
         when(mapper.writeValueAsString(any())).thenReturn("updateFieldValue");
@@ -300,7 +300,7 @@ class BPWorkFlowServiceImplTest {
         courseBatchDetails.put(Constants.BATCH_NAME, "Batch Name");
         courseBatchDetails.put(Constants.START_DATE, new Date());
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(new ArrayList<>());
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20);
         when(mapper.writeValueAsString(any())).thenReturn("updateFieldValue");
@@ -990,7 +990,7 @@ class BPWorkFlowServiceImplTest {
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
 
-        when(contentReadService.getServiceNameDetails(COURSE_ID)).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(COURSE_ID)).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(BATCH_ID)).thenReturn(List.of());
 
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20); // 20% buffer
@@ -1032,7 +1032,7 @@ class BPWorkFlowServiceImplTest {
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
 
         WfStatusEntity fullStatus = new WfStatusEntity();
         fullStatus.setCurrentStatus("APPROVED");
@@ -1062,7 +1062,7 @@ class BPWorkFlowServiceImplTest {
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(List.of());
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(0);
 
@@ -1085,7 +1085,7 @@ class BPWorkFlowServiceImplTest {
 
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(List.of());
 
         // Simulate user already enrolled
@@ -1106,7 +1106,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> batchAttr = Map.of(Constants.BATCH_ATTRIBUTES, "invalid-json");
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
 
         when(configuration.getBatchFullMesg()).thenReturn("Batch full");
 
@@ -1122,7 +1122,7 @@ class BPWorkFlowServiceImplTest {
 
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(Collections.emptyList());
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
 
         when(configuration.getBatchFullMesg()).thenReturn("Batch full");
 
@@ -1391,7 +1391,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-program", "batch-conflict", List.of(userId), "Dept B");
 
         when(contentReadService.getServiceNameDetails("course-program"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         stubBatchAttributes(3600L, 10, "Batch Conflict");
 
@@ -1405,7 +1405,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-program", "batch-start-invalid", List.of(userId), "Dept C");
 
         when(contentReadService.getServiceNameDetails("course-program"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         // batch start in past -> invalid
         // use negative offset to simulate past
@@ -1421,7 +1421,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-program", "batch-full", List.of(userId), "Dept D");
 
         when(contentReadService.getServiceNameDetails("course-program"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         // batch full -> currentBatchSize equals some limit (simulate full check)
         stubBatchAttributes(3600L, 200, "Batch Full"); // large number to trigger "full" in validation
@@ -1436,7 +1436,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course1", "batch-exists", List.of(userId), "Dept E");
 
         when(contentReadService.getServiceNameDetails("course1"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         // simulate existing active workflow for this user -> service should mark ALREADY_EXISTS
         WfStatusEntity existing = new WfStatusEntity();
@@ -1455,7 +1455,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-invalid", "batch-invalid", List.of(userId), "Dept F");
 
         when(contentReadService.getServiceNameDetails("course-invalid"))
-                .thenReturn("UNKNOWN_APPROVAL_TYPE");
+                .thenReturn(Map.of("wfApprovalType", "UNKNOWN_APPROVAL_TYPE", "primaryCategory", "Course"));
 
         when(wfStatusRepo.findActiveWorkflows("batch-invalid", userId, Boolean.TRUE))
                 .thenReturn(Collections.emptyList());
