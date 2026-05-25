@@ -515,9 +515,11 @@ class BPWorkFlowServiceImplPrivateMethodTest {
      */
     private boolean invokeValidateBatchStartDate(Map<String, Object> courseBatchDetails, String serviceName) throws Exception {
         Method method = BPWorkFlowServiceImpl.class.getDeclaredMethod(
-                "validateBatchStartDate", Map.class, String.class);
+                "validateBatchStartDate", Map.class, String.class, Map.class);
         method.setAccessible(true);
-        return (boolean) method.invoke(bpWorkFlowService, courseBatchDetails, serviceName);
+        Map<String, Object> batchDetailsMap = new HashMap<>();
+        batchDetailsMap.put(Constants.PRIMARY_CATEGORY, "Course");
+        return (boolean) method.invoke(bpWorkFlowService, courseBatchDetails, serviceName, batchDetailsMap);
     }
 
     /**
@@ -677,5 +679,25 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         courseBatchDetails.put(Constants.START_DATE, istDate);
         boolean result = invokeValidateBatchStartDate(courseBatchDetails, Constants.BLENDED_PROGRAM_SERVICE_NAME);
         assertTrue(result, "Should correctly handle dates in IST timezone (Asia/Kolkata)");
+    }
+
+    /**
+     * Test: Blended program with primaryCategory set to "Blended Program"
+     * Should allow same-day enrollment
+     */
+    @Test
+    void testValidateBatchStartDate_BlendedProgramPrimaryCategory_ShouldReturnTrue() throws Exception {
+        Date today = Date.from(LocalDate.now(APPLICATION_TIMEZONE).atStartOfDay(APPLICATION_TIMEZONE).toInstant());
+        Map<String, Object> courseBatchDetails = new HashMap<>();
+        courseBatchDetails.put(Constants.START_DATE, today);
+
+        Map<String, Object> batchDetailsMap = new HashMap<>();
+        batchDetailsMap.put(Constants.PRIMARY_CATEGORY, Constants.BLENDED_PROGRAM);
+
+        Method method = BPWorkFlowServiceImpl.class.getDeclaredMethod(
+                "validateBatchStartDate", Map.class, String.class, Map.class);
+        method.setAccessible(true);
+        boolean result = (boolean) method.invoke(bpWorkFlowService, courseBatchDetails, "regularprogram", batchDetailsMap);
+        assertTrue(result, "Should allow same-day enrollment when primaryCategory is Blended Program");
     }
 }
