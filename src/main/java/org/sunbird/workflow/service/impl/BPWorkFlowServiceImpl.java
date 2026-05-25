@@ -1603,7 +1603,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
             Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(programId);
             String wfApproveType = null;
             String primaryCategory = null;
-            if (MapUtils.isEmpty(courseDetails)) {
+            if (MapUtils.isNotEmpty(courseDetails)) {
                 wfApproveType = (String) courseDetails.get(Constants.WF_APPROVAL_TYPE);
                 primaryCategory = (String) courseDetails.get(Constants.PRIMARY_CATEGORY);
             }
