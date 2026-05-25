@@ -272,9 +272,6 @@ public class Configuration {
     @Value("${user.profile.cache.ttl}")
     private int basicProfileCacheTtl;
 
-    @Value("${workflow.cache.ttl}")
-    private int workflowCacheTtl;
-
     @Value("${ai.assessment.topic}")
     private String aiAssessmentTopic;
 
@@ -957,10 +954,6 @@ public class Configuration {
     public int getBasicProfileCacheTtl() { return basicProfileCacheTtl; }
 
     public void setBasicProfileCacheTtl(int basicProfileCacheTtl) { this.basicProfileCacheTtl = basicProfileCacheTtl; }
-
-    public int getWorkflowCacheTtl() {
-        return workflowCacheTtl;
-    }
 
     public String getAiAssessmentTopic() {
         return aiAssessmentTopic;

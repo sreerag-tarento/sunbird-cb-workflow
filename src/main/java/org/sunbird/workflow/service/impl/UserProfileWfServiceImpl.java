@@ -298,6 +298,8 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 					for (Map<String, Object> content : contents) {
 						HashMap<String, Object> profileDetails = (HashMap<String, Object>) content
 								.get(Constants.PROFILE_DETAILS);
+						HashMap<String, Object> employmentDetails = (HashMap<String, Object>) profileDetails
+								.get(Constants.EMPLOYMENT_DETAILS);
 						if (MapUtils.isNotEmpty(profileDetails)) {
 							HashMap<String, Object> personalDetails = (HashMap<String, Object>) profileDetails
 									.get(Constants.PERSONAL_DETAILS);
@@ -308,6 +310,9 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 								record.put(Constants.EMAIL, personalDetails.get(Constants.PRIMARY_EMAIL));
 								record.put(Constants.ROOT_ORG_ID,content.get(Constants.ROOT_ORG_ID));
 								record.put(Constants.MOBILE, personalDetails.get(Constants.MOBILE));
+							}
+							if (MapUtils.isNotEmpty(employmentDetails) && StringUtils.isNotBlank((String) employmentDetails.get(Constants.DEPARTMENT_NAME))) {
+								record.put(Constants.DEPARTMENT_NAME, employmentDetails.get(Constants.DEPARTMENT_NAME));
 							}
 							Map<String, Object> additionalProperties = (Map<String, Object>) profileDetails.get(Constants.ADDITIONAL_PROPERTIES);
 							if (MapUtils.isNotEmpty(additionalProperties)) {

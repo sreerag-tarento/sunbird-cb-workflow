@@ -30,14 +30,6 @@ public class RedisConfig {
 		return jedisPool;
 	}
 
-	@Bean
-	public JedisPool jedisWorkflowPopulationPool() {
-		final JedisPoolConfig poolConfig = buildPoolConfig();
-		JedisPool jedisPool = new JedisPool(poolConfig, redisConfiguration.getWorkflowRedisHostName(),
-				Integer.parseInt(redisConfiguration.getWorkflowRedisPort()));
-		return jedisPool;
-	}
-
 
 	private JedisPoolConfig buildPoolConfig() {
 		final JedisPoolConfig poolConfig = new JedisPoolConfig();
