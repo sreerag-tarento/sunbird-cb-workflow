@@ -84,10 +84,10 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
                 wfRequest.getCourseId());
         Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
         String serviceName = null;
-        if (courseDetails != null && courseDetails.get("wfApprovalType") != null) {
-            serviceName = (String) courseDetails.get("wfApprovalType");
+        if (MapUtils.isNotEmpty(courseDetails) && null != courseDetails.get(Constants.WF_APPROVAL_TYPE)) {
+            serviceName = (String) courseDetails.get(Constants.WF_APPROVAL_TYPE);
         }
-        if (serviceName == null || serviceName.isEmpty()) {
+        if (StringUtils.isBlank(serviceName)) {
             serviceName = Constants.BLENDED_PROGRAM_SERVICE_NAME;
         }
         int totalUserEnrolCount = getTotalUserEnrolCountForBatch(wfRequest.getApplicationId());
@@ -1603,9 +1603,9 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
             Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(programId);
             String wfApproveType = null;
             String primaryCategory = null;
-            if (null != courseDetails) {
-                wfApproveType = (String) courseDetails.get("wfApprovalType");
-                primaryCategory = (String) courseDetails.get("primaryCategory");
+            if (MapUtils.isEmpty(courseDetails)) {
+                wfApproveType = (String) courseDetails.get(Constants.WF_APPROVAL_TYPE);
+                primaryCategory = (String) courseDetails.get(Constants.PRIMARY_CATEGORY);
             }
             if (StringUtils.isBlank(wfApproveType)) {
                 wfApproveType = Constants.BLENDED_PROGRAM_SERVICE_NAME;
