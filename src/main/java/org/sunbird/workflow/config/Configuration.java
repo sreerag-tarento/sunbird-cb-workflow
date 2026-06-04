@@ -284,6 +284,30 @@ public class Configuration {
     @Value("${ai.assessment.approve.reject.roles}")
     private String aiAssessmentApproveRejectRoles;
 
+    @Value("${ai.assessment.spv.email.subject}")
+    private String aiAssessmentSpvEmailSubject;
+
+    @Value("${ai.assessment.spv.email.body}")
+    private String aiAssessmentSpvEmailBody;
+
+    @Value("${ai.assessment.approved.email.subject}")
+    private String aiAssessmentApprovedEmailSubject;
+
+    @Value("${ai.assessment.approved.email.body}")
+    private String aiAssessmentApprovedEmailBody;
+
+    @Value("${ai.assessment.rejected.email.subject}")
+    private String aiAssessmentRejectedEmailSubject;
+
+    @Value("${ai.assessment.rejected.email.body}")
+    private String aiAssessmentRejectedEmailBody;
+
+    @Value("${ai.assessment.approval.link}")
+    private String aiAssessmentApprovalLink;
+
+    @Value("${cbp.portal.host}")
+    private String cbpPortalHost;
+
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
     }
@@ -969,5 +993,37 @@ public class Configuration {
 
     public List<String> getAiAssessmentApproveRejectRoles() {
         return Arrays.asList(aiAssessmentApproveRejectRoles.split(","));
+    }
+
+    public String getAiAssessmentSpvEmailSubject() {
+        return aiAssessmentSpvEmailSubject;
+    }
+
+    public String getAiAssessmentSpvEmailBody() {
+        return aiAssessmentSpvEmailBody;
+    }
+
+    public String getAiAssessmentApprovedEmailSubject() {
+        return aiAssessmentApprovedEmailSubject;
+    }
+
+    public String getAiAssessmentApprovedEmailBody() {
+        return aiAssessmentApprovedEmailBody;
+    }
+
+    public String getAiAssessmentRejectedEmailSubject() {
+        return aiAssessmentRejectedEmailSubject;
+    }
+
+    public String getAiAssessmentRejectedEmailBody() {
+        return aiAssessmentRejectedEmailBody;
+    }
+
+    public String getAiAssessmentApprovalLink() {
+        return aiAssessmentApprovalLink;
+    }
+
+    public String getCbpPortalHost() {
+        return cbpPortalHost;
     }
 }

@@ -1,5 +1,7 @@
 package org.sunbird.workflow.config;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -252,7 +254,7 @@ public class Constants {
 	public static final String CONTENT_HIERARCHY = "content_hierarchy";
 	public static final String IDENTIFIER = "identifier";
 	public static final String HIERARCHY = "hierarchy";
-	public static final Object KARMYOGI_BHARAT = "Karmyogi Bharat";
+	public static final Object KARMYOGI_BHARAT = "Karmayogi Bharat";
 	public static final String TO_PROGRAMME_COORDINATOR = "Programme Coordinator";
 	public static final String TO_MDO_ADMIN = "MDO Admin";
 	public static final String DOMAIN ="domain";
@@ -445,17 +447,24 @@ public class Constants {
 	public static final String AI_ASSESSMENT_SERVICE_NAME = "ai_assessment";
 	public static final String ONE_STEP_SPV_APPROVAL="oneStepSPVApproval";
 	public static final String PENDING = "PENDING";
-	public static final String AI_ASSESSMENT_SPV_SUBJECT = "AI Assessment Access Request - Action Required";
-	public static final String AI_ASSESSMENT_SPV_BODY = "User #userName has requested access to AI Assessment Tool. Please review and take action.";
-	public static final String AI_ASSESSMENT_USER_APPROVED_SUBJECT = "AI Assessment Tool Access - Approved";
-	public static final String AI_ASSESSMENT_USER_APPROVED_BODY = "Your request to access AI Assessment Tool has been approved. You can now access the tool.";
-	public static final String AI_ASSESSMENT_USER_REJECTED_SUBJECT = "AI Assessment Tool Access - Rejected";
-	public static final String AI_ASSESSMENT_USER_REJECTED_BODY = "Your request to access AI Assessment Tool has been rejected.";
 	public static final String SPV_PUBLISHER = "SPV_PUBLISHER";
 	public static final String AI_ASSESSMENT_CREATOR = "AI_ASSESSMENT_CREATOR";
 	public static final String EMAIL_LIST = "emailList";
 	public static final String EMAIL_TO = "emailTo";
 	public static final String SUBJECT = "subject";
 	public static final String BODY = "body";
+	public static final String SPVPUBLISHER = "SPV Publisher";
+	public static final String PLACEHOLDER_USER_NAME = "#userName";
+	public static final String PLACEHOLDER_APPROVER_NAME = "#approverName";
+	public static final String PLACEHOLDER_ACTION_DATE = "#actionDate";
+	public static final String PLACEHOLDER_APPLICATION_NAME = "#applicationName";
+	public static final String PLACEHOLDER_ORGANIZATION = "#organization";
+	public static final String PLACEHOLDER_SUBMITTED_ON = "#submittedOn";
+	public static final String PLACEHOLDER_APPROVAL_LINK = "#approvalLink";
+	public static final String PLACEHOLDER_REJECTION_REASON = "#rejectionReason";
+	public static final String NOT_SPECIFIED = "Not specified";
+	public static final String DATE_FORMAT = "dd-MM-yyyy HH:mm:ss";
+	public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT);
+	public static final ZoneId IST_ZONE_ID = ZoneId.of("Asia/Kolkata");
 
 }
