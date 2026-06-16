@@ -83,7 +83,14 @@ public class WorkflowRedisCacheMgr {
 
     /**
      * Increments the given field in the batch stats hash by 1.
-     * If the key does not exist, initialises it from the DB first (lazy init).
+     *
+     * On cache miss: initialises from DB and returns without applying a delta,
+     * because the Kafka event is always published AFTER the DB write — so the
+     * DB snapshot already reflects this state change. Applying +1 on top would
+     * double-count the record.
+     *
+     * On cache hit: the cache was built before this change arrived, so the
+     * delta is applied normally to keep the cache in sync.
      */
     public void incrementBatchFieldCount(String batchId, String field) {
         var key = Constants.BP_BATCH_STATS_PREFIX + batchId;
@@ -91,6 +98,8 @@ public class WorkflowRedisCacheMgr {
             jedis.select(configuration.getBpBatchStatsCacheIndex());
             if (!jedis.exists(key)) {
                 initBatchStatsFromDb(batchId, jedis, key);
+                logger.debug("Cache miss for batchId={}: initialised from DB (skipping increment for field={})", batchId, field);
+                return;
             }
             var updated = jedis.hincrBy(key, field, 1L);
             logger.debug("Incremented field={} for batchId={} newValue={}", field, batchId, updated);
@@ -101,14 +110,20 @@ public class WorkflowRedisCacheMgr {
 
     /**
      * Decrements the given field in the batch stats hash by 1.
-     * No-op if the key does not exist — avoids creating a stale entry on decrement.
+     *
+     * On cache miss: initialises from DB and returns without applying a delta,
+     * because the DB already reflects this state change (event published after
+     * DB write). Applying -1 on top would under-count the record.
+     *
+     * On cache hit: apply the delta normally to keep the cache in sync.
      */
     public void decrementBatchFieldCount(String batchId, String field) {
         var key = Constants.BP_BATCH_STATS_PREFIX + batchId;
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(configuration.getBpBatchStatsCacheIndex());
             if (!jedis.exists(key)) {
-                logger.debug("Skipping decrement for field={} batchId={} — key not in cache", field, batchId);
+                initBatchStatsFromDb(batchId, jedis, key);
+                logger.debug("Cache miss for batchId={}: initialised from DB (skipping decrement for field={})", batchId, field);
                 return;
             }
             var updated = jedis.hincrBy(key, field, -1L);
