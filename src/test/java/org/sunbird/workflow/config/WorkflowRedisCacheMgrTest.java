@@ -85,7 +85,7 @@ class WorkflowRedisCacheMgrTest {
 
 
     @Test
-    void increment_whenKeyMissing_initFromDbThenIncrBy() {
+    void increment_whenKeyMissing_initFromDbAndSkipIncrBy() {
         String batchId = "batch-002";
         String key = Constants.BP_BATCH_STATS_PREFIX + batchId;
         when(jedis.exists(key)).thenReturn(false);
@@ -104,7 +104,7 @@ class WorkflowRedisCacheMgrTest {
                 Constants.BATCH_STATS_FIELD_WITHDRAWN, "1",
                 Constants.BATCH_STATS_FIELD_REJECTED, "0"
         ));
-        verify(jedis).hincrBy(key, Constants.BATCH_STATS_FIELD_PENDING, 1L);
+        verify(jedis, never()).hincrBy(any(String.class), any(String.class), anyLong());
     }
 
     @Test
@@ -123,6 +123,7 @@ class WorkflowRedisCacheMgrTest {
                 Constants.BATCH_STATS_FIELD_WITHDRAWN, "0",
                 Constants.BATCH_STATS_FIELD_REJECTED, "5"
         ));
+        verify(jedis, never()).hincrBy(any(String.class), any(String.class), anyLong());
     }
 
     @Test
@@ -137,6 +138,7 @@ class WorkflowRedisCacheMgrTest {
                 Constants.BATCH_STATS_FIELD_WITHDRAWN, "0",
                 Constants.BATCH_STATS_FIELD_REJECTED, "0"
         ));
+        verify(jedis, never()).hincrBy(any(String.class), any(String.class), anyLong());
     }
 
     @Test
@@ -155,13 +157,21 @@ class WorkflowRedisCacheMgrTest {
     }
 
     @Test
-    void decrement_whenKeyMissing_isNoOpAndDoesNotInitFromDb() {
+    void decrement_whenKeyMissing_initFromDbAndSkipDecrement() {
         String batchId = "batch-006";
         String key = Constants.BP_BATCH_STATS_PREFIX + batchId;
         when(jedis.exists(key)).thenReturn(false);
+        List<Object[]> dbRows = new ArrayList<>();
+        dbRows.add(new Object[]{"WITHDRAWN", 1L});
+        when(wfStatusRepo.countGroupedByStatusForApplicationId(batchId)).thenReturn(dbRows);
         cacheMgr.decrementBatchFieldCount(batchId, Constants.BATCH_STATS_FIELD_PENDING);
         verify(jedis, never()).hincrBy(any(String.class), any(String.class), anyLong());
-        verify(wfStatusRepo, never()).countGroupedByStatusForApplicationId(any());
+        verify(wfStatusRepo).countGroupedByStatusForApplicationId(batchId);
+        verify(jedis).hmset(eq(key), argThat(m ->
+                "0".equals(m.get(Constants.BATCH_STATS_FIELD_PENDING)) &&
+                "1".equals(m.get(Constants.BATCH_STATS_FIELD_WITHDRAWN)) &&
+                "0".equals(m.get(Constants.BATCH_STATS_FIELD_REJECTED))
+        ));
     }
 
     @Test
