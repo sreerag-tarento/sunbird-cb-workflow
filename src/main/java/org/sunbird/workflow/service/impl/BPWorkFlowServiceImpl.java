@@ -24,6 +24,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.sunbird.workflow.config.Configuration;
 import org.sunbird.workflow.config.Constants;
+import org.sunbird.workflow.models.BatchStatsEvent;
 import org.sunbird.workflow.exception.ApplicationException;
 import org.sunbird.workflow.exception.BadRequestException;
 import org.sunbird.workflow.exception.InvalidDataInputException;
@@ -140,7 +141,14 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
             response.put(Constants.STATUS, HttpStatus.BAD_REQUEST);
             return response;
         }
-        return workflowService.workflowTransition(rootOrg, org, wfRequest, userId,role);
+        Response wfResponse = workflowService.workflowTransition(rootOrg, org, wfRequest, userId, role);
+        if (wfResponse != null) {
+            Map<String, Object> responseData = (Map<String, Object>) wfResponse.get(Constants.DATA);
+            if (responseData != null) {
+                publishBatchStatsOnStatusChange(wfRequest.getApplicationId(), (String) responseData.get(Constants.STATUS));
+            }
+        }
+        return wfResponse;
     }
 
     @Override
@@ -596,7 +604,8 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         applicationStatus.setComment(wfRequest.getComment());
         wfRequest.setWfId(wfId);
         wfStatusRepo.save(applicationStatus);
-
+        logger.info("Admin enrolment wf_status saved, publishing pending increment for batchId={} userId={}", wfRequest.getApplicationId(), wfRequest.getUserId());
+        producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(wfRequest.getApplicationId(), Constants.BATCH_STATS_FIELD_PENDING, 1L));
         Response response = new Response();
         HashMap<String, Object> data = new HashMap<>();
         data.put(Constants.STATUS, Constants.ADMIN_ENROLL_IS_IN_PROGRESS);
@@ -958,6 +967,8 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         applicationStatus.setComment(wfRequest.getComment());
         wfRequest.setWfId(wfId);
         wfStatusRepo.save(applicationStatus);
+        logger.info("Self enrolment wf_status saved, publishing pending increment for batchId={} userId={}", wfRequest.getApplicationId(), wfRequest.getUserId());
+        producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(wfRequest.getApplicationId(), Constants.BATCH_STATS_FIELD_PENDING, 1L));
         Response response = new Response();
         HashMap<String, Object> data = new HashMap<>();
         data.put(Constants.STATUS, Constants.ENROLL_IS_IN_PROGRESS);
@@ -1648,6 +1659,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
                             req.setComment("Superseded by " + incomingRole + " nomination");
                             req.setLastUpdatedOn(new Date());
                             wfStatusRepo.save(req);
+                            publishBatchStatsOnStatusChange(req.getApplicationId(), Constants.WITHDRAWN);
                         } else {
                             logger.info("Skipping nomination - existing approval by {} remains active", existingRole);
                             userResponse.put(Constants.STATUS, Constants.ALREADY_EXISTS);
@@ -1915,6 +1927,26 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         applicationStatus.setLastUpdatedOn(new Date());
         applicationStatus.setCurrentStatus(Constants.SEND_FOR_PC_APPROVAL);
         WfStatusEntity savedEntity = wfStatusRepo.save(applicationStatus);
+    }
+
+    /**
+     * Publishes batch enrollment stat events to Kafka based on the workflow status transition.
+     * The consumer updates Redis asynchronously, keeping the enrollment path non-blocking.
+     * Add new else-if blocks here when additional status transitions need to be tracked.
+     */
+    private void publishBatchStatsOnStatusChange(String batchId, String status) {
+        if (Constants.WITHDRAWN.equals(status)) {
+            logger.info("Publishing batch stats withdrawal events for batchId={}", batchId);
+            producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(batchId, Constants.BATCH_STATS_FIELD_PENDING, -1L));
+            producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(batchId, Constants.BATCH_STATS_FIELD_WITHDRAWN, 1L));
+        } else if (Constants.APPROVED_STATE.equals(status)) {
+            logger.info("Publishing batch stats approval events for batchId={}", batchId);
+            producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(batchId, Constants.BATCH_STATS_FIELD_PENDING, -1L));
+        } else if (Constants.REJECTED.equals(status)) {
+            logger.info("Publishing batch stats rejection events for batchId={}", batchId);
+            producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(batchId, Constants.BATCH_STATS_FIELD_PENDING, -1L));
+            producer.push(configuration.getBpBatchStatsTopic(), new BatchStatsEvent(batchId, Constants.BATCH_STATS_FIELD_REJECTED, 1L));
+        }
     }
 
 }

@@ -3,6 +3,7 @@ package org.sunbird.workflow.config;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class Constants {
 
@@ -460,5 +461,11 @@ public class Constants {
 	public static final String PRIMARY_CATEGORY = "primaryCategory";
 	public static final String BLENDED_PROGRAM = "Blended Program";
 	public static final String WF_APPROVAL_TYPE = "wfApprovalType";
+
+	public static final String BP_BATCH_STATS_PREFIX = "bp:batch:enrollment:stats:";
+	public static final String BATCH_STATS_FIELD_PENDING = "pending";
+	public static final String BATCH_STATS_FIELD_WITHDRAWN = "withdrawn";
+	public static final String BATCH_STATS_FIELD_REJECTED = "rejected";
+	public static final Set<String> BATCH_STATS_TERMINAL_STATUSES = Set.of(APPROVED_STATE, REJECTED, WITHDRAWN, REMOVED);
 
 }

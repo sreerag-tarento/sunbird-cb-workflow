@@ -13,6 +13,7 @@ import org.sunbird.workflow.exception.InvalidDataInputException;
 import org.sunbird.workflow.models.*;
 import org.sunbird.workflow.postgres.entity.WfStatusEntity;
 import org.sunbird.workflow.postgres.repo.WfStatusRepo;
+import org.sunbird.workflow.producer.Producer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -456,12 +457,15 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         // Mock dependencies
         WfStatusRepo wfStatusRepo = mock(WfStatusRepo.class);
         ObjectMapper newMapper = mock(ObjectMapper.class);
-        Configuration configuration = mock(Configuration.class);
+        Configuration mockConfig = mock(Configuration.class);
+        Producer mockProducer = mock(Producer.class);
 
         // Inject mocks via reflection
         setPrivateField(service, "wfStatusRepo", wfStatusRepo);
         setPrivateField(service, "mapper", newMapper);
-        setPrivateField(service, "configuration", configuration);
+        setPrivateField(service, "configuration", mockConfig);
+        setPrivateField(service, "producer", mockProducer);
+        when(mockConfig.getBpBatchStatsTopic()).thenReturn("bp.batch.enrollment.stats");
 
         // Prepare test data
         String rootOrg = "rootOrg";
