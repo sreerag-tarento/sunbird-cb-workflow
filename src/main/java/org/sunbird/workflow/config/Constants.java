@@ -466,6 +466,7 @@ public class Constants {
 	public static final String BATCH_STATS_FIELD_PENDING = "pending";
 	public static final String BATCH_STATS_FIELD_WITHDRAWN = "withdrawn";
 	public static final String BATCH_STATS_FIELD_REJECTED = "rejected";
+	public static final String BATCH_STATS_FIELD_APPROVED = "approved";
 	public static final Set<String> BATCH_STATS_TERMINAL_STATUSES = Set.of(APPROVED_STATE, REJECTED, WITHDRAWN, REMOVED);
 
 }

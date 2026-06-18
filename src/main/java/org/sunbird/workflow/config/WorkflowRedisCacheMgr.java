@@ -5,9 +5,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.sunbird.workflow.postgres.repo.WfStatusRepo;
+import org.sunbird.workflow.utils.CassandraOperation;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -16,14 +19,17 @@ public class WorkflowRedisCacheMgr {
     private final JedisPool jedisPool;
     private final WfStatusRepo wfStatusRepo;
     private final Configuration configuration;
+    private final CassandraOperation cassandraOperation;
     private final Logger logger = LoggerFactory.getLogger(WorkflowRedisCacheMgr.class);
 
     public WorkflowRedisCacheMgr(@Qualifier("jedisWorkflowPopulationPool") JedisPool jedisPool,
                                  WfStatusRepo wfStatusRepo,
-                                 Configuration configuration) {
+                                 Configuration configuration,
+                                 CassandraOperation cassandraOperation) {
         this.jedisPool = jedisPool;
         this.wfStatusRepo = wfStatusRepo;
         this.configuration = configuration;
+        this.cassandraOperation = cassandraOperation;
     }
 
     public void put(String key, String value, int ttl, int index) {
@@ -49,9 +55,8 @@ public class WorkflowRedisCacheMgr {
 
     /**
      * Lazy-initialises the batch stats Redis hash from the DB.
-     * Queries wf_status grouped by current_status for the given batchId,
-     * tallies pending (any non-terminal status) and withdrawn counts,
-     * then writes both fields into the hash in a single HMSET.
+     * pending/withdrawn/rejected come from wf_status (PostgreSQL).
+     * approved comes from enrollment_batch_lookup (Cassandra) — source of truth for actual enrollments.
      */
     private void initBatchStatsFromDb(String batchId, Jedis jedis, String key) {
         logger.debug("Cache miss for batchId={}, initialising batch stats from DB", batchId);
@@ -72,13 +77,15 @@ public class WorkflowRedisCacheMgr {
                 rejected = count;
             }
         }
+        long approved = countActiveEnrollments(batchId);
         jedis.hmset(key, Map.of(
                 Constants.BATCH_STATS_FIELD_PENDING, String.valueOf(pending),
                 Constants.BATCH_STATS_FIELD_WITHDRAWN, String.valueOf(withdrawn),
-                Constants.BATCH_STATS_FIELD_REJECTED, String.valueOf(rejected)));
+                Constants.BATCH_STATS_FIELD_REJECTED, String.valueOf(rejected),
+                Constants.BATCH_STATS_FIELD_APPROVED, String.valueOf(approved)));
         jedis.expire(key, configuration.getBpBatchStatsCacheTtl());
-        logger.info("Batch stats cache initialised for batchId={} pending={} withdrawn={} rejected={} ttl={}s",
-                batchId, pending, withdrawn, rejected, configuration.getBpBatchStatsCacheTtl());
+        logger.info("Batch stats cache initialised for batchId={} pending={} withdrawn={} rejected={} approved={} ttl={}s",
+                batchId, pending, withdrawn, rejected, approved, configuration.getBpBatchStatsCacheTtl());
     }
 
     /**
@@ -149,5 +156,25 @@ public class WorkflowRedisCacheMgr {
             logger.error("Failed to read batch stats from cache for batchId={}", batchId, e);
             return Collections.emptyMap();
         }
+    }
+
+    /**
+     * Counts active (enrolled) participants for the given batchId from Cassandra
+     * enrollment_batch_lookup — the same source of truth used by sunbird-course-service.
+     */
+    private long countActiveEnrollments(String batchId) {
+        logger.info("BatchStats: countActiveEnrollments :: batchId={}", batchId);
+        Map<String, Object> propertyMap = new HashMap<>();
+        propertyMap.put(Constants.BATCH_ID, batchId);
+        List<Map<String, Object>> rows = cassandraOperation.getRecordsByProperties(
+                Constants.KEYSPACE_SUNBIRD_COURSES,
+                Constants.TABLE_ENROLMENT_BATCH_LOOKUP,
+                propertyMap,
+                List.of(Constants.ACTIVE));
+        long count = rows.stream()
+                .filter(r -> r != null && Boolean.TRUE.equals(r.get(Constants.ACTIVE)))
+                .count();
+        logger.info("BatchStats: countActiveEnrollments :: batchId={} totalRows={} activeCount={}", batchId, rows.size(), count);
+        return count;
     }
 }
