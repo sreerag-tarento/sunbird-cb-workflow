@@ -609,10 +609,7 @@ public class NotificationServiceImpl {
 	private void sendNotificationToSPV(
 			WfRequest wfRequest, WfStatusEntity wfStatusEntity) {
 
-		List<String> spvEmailList = userProfileWfService
-				.getMdoAdminAndPCDetails(
-						null,
-						Collections.singletonList(Constants.SPV_PUBLISHER));
+		List<String> spvEmailList = configuration.getAiAssessmentSpvAdminEmail();
 		if (CollectionUtils.isEmpty(spvEmailList)) {
 			logger.warn("No SPV emails found for rootOrgId: {}",
 					wfRequest.getRootOrgId());
