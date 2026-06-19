@@ -308,6 +308,9 @@ public class Configuration {
     @Value("${cbp.portal.host}")
     private String cbpPortalHost;
 
+    @Value("${ai.assessment.spv.admin.email}")
+    private String aiAssessmentSpvAdminEmail;
+
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
     }
@@ -1025,5 +1028,9 @@ public class Configuration {
 
     public String getCbpPortalHost() {
         return cbpPortalHost;
+    }
+
+    public List<String> getAiAssessmentSpvAdminEmail() {
+        return Arrays.asList(aiAssessmentSpvAdminEmail.split(",", -1));
     }
 }
