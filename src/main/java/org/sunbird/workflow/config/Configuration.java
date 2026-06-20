@@ -299,6 +299,21 @@ public class Configuration {
     @Value("${bp.batch.stats.cache.index}")
     private int bpBatchStatsCacheIndex;
 
+    @Value("${bp.batch.stats.sync.db.chunk.size:50}")
+    private int bpBatchStatsSyncDbChunkSize;
+
+    @Value("${sb.search.service.host}")
+    private String sbSearchServiceHost;
+
+    @Value("${sb.composite.v4.search}")
+    private String sbCompositeV4Search;
+
+    @Value("${bp.batch.stats.sync.redis.pipeline.size:100}")
+    private int bpBatchStatsSyncRedisPipelineSize;
+
+    @Value("${bp.batch.stats.sync.page.size:100}")
+    private int bpBatchStatsSyncPageSize;
+
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
     }
@@ -1018,4 +1033,45 @@ public class Configuration {
     public void setBpBatchStatsCacheIndex(int bpBatchStatsCacheIndex) {
         this.bpBatchStatsCacheIndex = bpBatchStatsCacheIndex;
     }
+
+    public int getBpBatchStatsSyncDbChunkSize() {
+        return bpBatchStatsSyncDbChunkSize;
+    }
+
+    public void setBpBatchStatsSyncDbChunkSize(int bpBatchStatsSyncDbChunkSize) {
+        this.bpBatchStatsSyncDbChunkSize = bpBatchStatsSyncDbChunkSize;
+    }
+
+    public String getSbSearchServiceHost() {
+        return sbSearchServiceHost;
+    }
+
+    public void setSbSearchServiceHost(String sbSearchServiceHost) {
+        this.sbSearchServiceHost = sbSearchServiceHost;
+    }
+
+    public String getSbCompositeV4Search() {
+        return sbCompositeV4Search;
+    }
+
+    public void setSbCompositeV4Search(String sbCompositeV4Search) {
+        this.sbCompositeV4Search = sbCompositeV4Search;
+    }
+
+    public int getBpBatchStatsSyncRedisPipelineSize() {
+        return bpBatchStatsSyncRedisPipelineSize;
+    }
+
+    public void setBpBatchStatsSyncRedisPipelineSize(int bpBatchStatsSyncRedisPipelineSize) {
+        this.bpBatchStatsSyncRedisPipelineSize = bpBatchStatsSyncRedisPipelineSize;
+    }
+
+    public int getBpBatchStatsSyncPageSize() {
+        return bpBatchStatsSyncPageSize;
+    }
+
+    public void setBpBatchStatsSyncPageSize(int bpBatchStatsSyncPageSize) {
+        this.bpBatchStatsSyncPageSize = bpBatchStatsSyncPageSize;
+    }
+
 }

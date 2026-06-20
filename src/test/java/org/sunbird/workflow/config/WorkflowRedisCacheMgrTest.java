@@ -7,9 +7,11 @@ import org.sunbird.workflow.postgres.repo.WfStatusRepo;
 import org.sunbird.workflow.utils.CassandraOperation;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Pipeline;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +51,10 @@ class WorkflowRedisCacheMgrTest {
         // Default: no active enrollments in Cassandra → approved = 0
         when(cassandraOperation.getRecordsByProperties(anyString(), anyString(), anyMap(), anyList()))
                 .thenReturn(Collections.emptyList());
+        // Default: no wf_status rows for bulk queries
+        when(wfStatusRepo.countGroupedByStatusForApplicationIds(anyList()))
+                .thenReturn(Collections.emptyList());
+        when(configuration.getBpBatchStatsSyncRedisPipelineSize()).thenReturn(100);
     }
 
 
@@ -286,5 +292,122 @@ class WorkflowRedisCacheMgrTest {
                 "3".equals(m.get(Constants.BATCH_STATS_FIELD_APPROVED)) &&
                 "0".equals(m.get(Constants.BATCH_STATS_FIELD_PENDING))
         ));
+    }
+
+
+    @Test
+    void bulkInitBatchStats_allKeysPresent_skipsDbAndRedisWrite() {
+        List<String> batchIds = List.of("batch-A", "batch-B");
+        Pipeline checkPipeline = mock(Pipeline.class);
+        redis.clients.jedis.Response<Boolean> existsTrue = mock(redis.clients.jedis.Response.class);
+        when(existsTrue.get()).thenReturn(true);
+        when(jedis.pipelined()).thenReturn(checkPipeline);
+        when(checkPipeline.exists(anyString())).thenReturn(existsTrue);
+        cacheMgr.bulkInitBatchStats(batchIds);
+        verify(wfStatusRepo, never()).countGroupedByStatusForApplicationIds(any());
+        verify(cassandraOperation, never()).getRecordsByProperties(any(), any(), any(), any());
+        verify(checkPipeline, never()).hmset(anyString(), any());
+    }
+
+    @Test
+    void bulkInitBatchStats_allKeysMissing_withNonZeroStats_writesHmsetToRedis() {
+        List<String> batchIds = List.of("batch-A");
+        Pipeline checkPipeline = mock(Pipeline.class);
+        Pipeline writePipeline = mock(Pipeline.class);
+        redis.clients.jedis.Response<Boolean> existsFalse = mock(redis.clients.jedis.Response.class);
+        when(existsFalse.get()).thenReturn(false);
+        when(jedis.pipelined()).thenReturn(checkPipeline).thenReturn(writePipeline);
+        when(checkPipeline.exists(anyString())).thenReturn(existsFalse);
+        List<Object[]> pgRows = Collections.singletonList(new Object[]{"batch-A", "ENROLL_IS_IN_PROGRESS", 3L});
+        when(wfStatusRepo.countGroupedByStatusForApplicationIds(batchIds)).thenReturn(pgRows);
+        List<Map<String, Object>> cassRows = List.of(
+                Map.of(Constants.BATCH_ID_KEY, "batch-A", Constants.ACTIVE, true),
+                Map.of(Constants.BATCH_ID_KEY, "batch-A", Constants.ACTIVE, true)
+        );
+        when(cassandraOperation.getRecordsByProperties(anyString(), anyString(), anyMap(), anyList()))
+                .thenReturn(cassRows);
+        cacheMgr.bulkInitBatchStats(batchIds);
+        verify(writePipeline).hmset(
+                eq(Constants.BP_BATCH_STATS_PREFIX + "batch-A"),
+                argThat(m -> "3".equals(m.get(Constants.BATCH_STATS_FIELD_PENDING))
+                        && "2".equals(m.get(Constants.BATCH_STATS_FIELD_APPROVED))
+                        && "0".equals(m.get(Constants.BATCH_STATS_FIELD_WITHDRAWN))
+                        && "0".equals(m.get(Constants.BATCH_STATS_FIELD_REJECTED)))
+        );
+        verify(writePipeline).expire(eq(Constants.BP_BATCH_STATS_PREFIX + "batch-A"), anyLong());
+        verify(writePipeline).sync();
+    }
+
+    @Test
+    void bulkInitBatchStats_allZeroStats_skipsHmsetButStillSyncs() {
+        List<String> batchIds = List.of("batch-X");
+        Pipeline checkPipeline = mock(Pipeline.class);
+        Pipeline writePipeline = mock(Pipeline.class);
+        redis.clients.jedis.Response<Boolean> existsFalse = mock(redis.clients.jedis.Response.class);
+        when(existsFalse.get()).thenReturn(false);
+        when(jedis.pipelined()).thenReturn(checkPipeline).thenReturn(writePipeline);
+        when(checkPipeline.exists(anyString())).thenReturn(existsFalse);
+        cacheMgr.bulkInitBatchStats(batchIds);
+        verify(writePipeline, never()).hmset(anyString(), any());
+        verify(writePipeline).sync();
+    }
+
+    @Test
+    void bulkInitBatchStats_cassandraRowsWithNullBatchId_areFilteredFromApprovedCount() {
+        List<String> batchIds = List.of("batch-A");
+        Pipeline checkPipeline = mock(Pipeline.class);
+        Pipeline writePipeline = mock(Pipeline.class);
+        redis.clients.jedis.Response<Boolean> existsFalse = mock(redis.clients.jedis.Response.class);
+        when(existsFalse.get()).thenReturn(false);
+        when(jedis.pipelined()).thenReturn(checkPipeline).thenReturn(writePipeline);
+        when(checkPipeline.exists(anyString())).thenReturn(existsFalse);
+        when(wfStatusRepo.countGroupedByStatusForApplicationIds(batchIds))
+                .thenReturn(Collections.singletonList(new Object[]{"batch-A", "ENROLL_IS_IN_PROGRESS", 1L}));
+        Map<String, Object> rowWithNullId = new HashMap<>();
+        rowWithNullId.put(Constants.BATCH_ID_KEY, null);
+        rowWithNullId.put(Constants.ACTIVE, true);
+        List<Map<String, Object>> cassRows = List.of(
+                rowWithNullId,
+                Map.of(Constants.BATCH_ID_KEY, "batch-A", Constants.ACTIVE, true)
+        );
+        when(cassandraOperation.getRecordsByProperties(anyString(), anyString(), anyMap(), anyList()))
+                .thenReturn(cassRows);
+        cacheMgr.bulkInitBatchStats(batchIds);
+        verify(writePipeline).hmset(
+                eq(Constants.BP_BATCH_STATS_PREFIX + "batch-A"),
+                argThat(m -> "1".equals(m.get(Constants.BATCH_STATS_FIELD_APPROVED)))
+        );
+    }
+
+    @Test
+    void bulkInitBatchStats_inactiveEnrollmentsExcludedFromApprovedCount() {
+        List<String> batchIds = List.of("batch-A");
+        Pipeline checkPipeline = mock(Pipeline.class);
+        Pipeline writePipeline = mock(Pipeline.class);
+        redis.clients.jedis.Response<Boolean> existsFalse = mock(redis.clients.jedis.Response.class);
+        when(existsFalse.get()).thenReturn(false);
+        when(jedis.pipelined()).thenReturn(checkPipeline).thenReturn(writePipeline);
+        when(checkPipeline.exists(anyString())).thenReturn(existsFalse);
+        when(wfStatusRepo.countGroupedByStatusForApplicationIds(batchIds))
+                .thenReturn(Collections.singletonList(new Object[]{"batch-A", "ENROLL_IS_IN_PROGRESS", 2L}));
+        List<Map<String, Object>> cassRows = List.of(
+                Map.of(Constants.BATCH_ID_KEY, "batch-A", Constants.ACTIVE, true),
+                Map.of(Constants.BATCH_ID_KEY, "batch-A", Constants.ACTIVE, false),
+                Map.of(Constants.BATCH_ID_KEY, "batch-A", Constants.ACTIVE, false)
+        );
+        when(cassandraOperation.getRecordsByProperties(anyString(), anyString(), anyMap(), anyList()))
+                .thenReturn(cassRows);
+        cacheMgr.bulkInitBatchStats(batchIds);
+        verify(writePipeline).hmset(
+                eq(Constants.BP_BATCH_STATS_PREFIX + "batch-A"),
+                argThat(m -> "1".equals(m.get(Constants.BATCH_STATS_FIELD_APPROVED))
+                        && "2".equals(m.get(Constants.BATCH_STATS_FIELD_PENDING)))
+        );
+    }
+
+    @Test
+    void bulkInitBatchStats_doesNotThrowOnException() {
+        when(jedis.pipelined()).thenThrow(new RuntimeException("Pipeline unavailable"));
+        assertDoesNotThrow(() -> cacheMgr.bulkInitBatchStats(List.of("batch-A")));
     }
 }
