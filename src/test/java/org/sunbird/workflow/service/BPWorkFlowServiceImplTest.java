@@ -236,7 +236,7 @@ class BPWorkFlowServiceImplTest {
         courseBatchDetails.put(Constants.BATCH_NAME, "Batch Name");
         courseBatchDetails.put(Constants.START_DATE, new Date());
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("BP_SERVICE");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "BP_SERVICE", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(new ArrayList<>());
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20);
         when(mapper.writeValueAsString(any())).thenReturn("updateFieldValue");
@@ -300,7 +300,7 @@ class BPWorkFlowServiceImplTest {
         courseBatchDetails.put(Constants.BATCH_NAME, "Batch Name");
         courseBatchDetails.put(Constants.START_DATE, new Date());
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(new ArrayList<>());
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20);
         when(mapper.writeValueAsString(any())).thenReturn("updateFieldValue");
@@ -990,7 +990,7 @@ class BPWorkFlowServiceImplTest {
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
 
-        when(contentReadService.getServiceNameDetails(COURSE_ID)).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(COURSE_ID)).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(BATCH_ID)).thenReturn(List.of());
 
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20); // 20% buffer
@@ -1032,7 +1032,7 @@ class BPWorkFlowServiceImplTest {
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
 
         WfStatusEntity fullStatus = new WfStatusEntity();
         fullStatus.setCurrentStatus("APPROVED");
@@ -1062,7 +1062,7 @@ class BPWorkFlowServiceImplTest {
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
 
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(List.of());
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(0);
 
@@ -1085,7 +1085,7 @@ class BPWorkFlowServiceImplTest {
 
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
         when(wfStatusRepo.findByApplicationId(any())).thenReturn(List.of());
 
         // Simulate user already enrolled
@@ -1106,7 +1106,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> batchAttr = Map.of(Constants.BATCH_ATTRIBUTES, "invalid-json");
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(List.of(batchAttr));
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
 
         when(configuration.getBatchFullMesg()).thenReturn("Batch full");
 
@@ -1122,7 +1122,7 @@ class BPWorkFlowServiceImplTest {
 
         when(cassandraOperation.getRecordsByProperties(any(), any(), anyMap(), anyList()))
                 .thenReturn(Collections.emptyList());
-        when(contentReadService.getServiceNameDetails(any())).thenReturn("service");
+        when(contentReadService.getServiceNameDetails(any())).thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
 
         when(configuration.getBatchFullMesg()).thenReturn("Batch full");
 
@@ -1391,7 +1391,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-program", "batch-conflict", List.of(userId), "Dept B");
 
         when(contentReadService.getServiceNameDetails("course-program"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         stubBatchAttributes(3600L, 10, "Batch Conflict");
 
@@ -1405,7 +1405,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-program", "batch-start-invalid", List.of(userId), "Dept C");
 
         when(contentReadService.getServiceNameDetails("course-program"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         // batch start in past -> invalid
         // use negative offset to simulate past
@@ -1421,7 +1421,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-program", "batch-full", List.of(userId), "Dept D");
 
         when(contentReadService.getServiceNameDetails("course-program"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         // batch full -> currentBatchSize equals some limit (simulate full check)
         stubBatchAttributes(3600L, 200, "Batch Full"); // large number to trigger "full" in validation
@@ -1436,7 +1436,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course1", "batch-exists", List.of(userId), "Dept E");
 
         when(contentReadService.getServiceNameDetails("course1"))
-                .thenReturn(Constants.ONE_STEP_PC_APPROVAL);
+                .thenReturn(Map.of("wfApprovalType", Constants.ONE_STEP_PC_APPROVAL, "primaryCategory", "Course"));
 
         // simulate existing active workflow for this user -> service should mark ALREADY_EXISTS
         WfStatusEntity existing = new WfStatusEntity();
@@ -1455,7 +1455,7 @@ class BPWorkFlowServiceImplTest {
         Map<String, Object> request = buildRequest("course-invalid", "batch-invalid", List.of(userId), "Dept F");
 
         when(contentReadService.getServiceNameDetails("course-invalid"))
-                .thenReturn("UNKNOWN_APPROVAL_TYPE");
+                .thenReturn(Map.of("wfApprovalType", "UNKNOWN_APPROVAL_TYPE", "primaryCategory", "Course"));
 
         when(wfStatusRepo.findActiveWorkflows("batch-invalid", userId, Boolean.TRUE))
                 .thenReturn(Collections.emptyList());
@@ -1523,6 +1523,186 @@ class BPWorkFlowServiceImplTest {
         assertEquals(Constants.SEND_FOR_PC_APPROVAL, entity.getCurrentStatus(), "Entity status should be set to SEND_FOR_PC_APPROVAL");
         assertNotNull(entity.getLastUpdatedOn(), "Entity.lastUpdatedOn should be updated");
         verify(wfStatusRepo).save(entity);
+    }
+
+    private WfRequest buildSkipValidationRequest() {
+        WfRequest req = new WfRequest();
+        req.setApplicationId(BATCH_ID);
+        req.setCourseId(COURSE_ID);
+        req.setUserId(USER_ID);
+        req.setAction("SKIP_VALIDATION");
+        return req;
+    }
+
+    private void stubSkipValidationAndConflictCheck() {
+        when(configuration.getBpBatchFullValidationExcludeStates())
+                .thenReturn(Collections.singletonList("SKIP_VALIDATION"));
+        when(cassandraOperation.getRecordsByProperties(anyString(), anyString(), anyMap(), anyList()))
+                .thenReturn(Collections.emptyList());
+        doReturn(false).when(bpWorkFlowService).scheduleConflictCheck(any());
+    }
+
+    @Test
+    void testUpdateBPWorkFlow_publishesTwoBatchStatsEvents_whenTransitionResultIsWithdrawn() {
+        wfRequest = buildSkipValidationRequest();
+        stubSkipValidationAndConflictCheck();
+        when(configuration.getBpBatchStatsTopic()).thenReturn("bp-stats-topic");
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put(Constants.STATUS, Constants.WITHDRAWN);
+        Response wfResponse = new Response();
+        wfResponse.put(Constants.DATA, dataMap);
+        when(workflowservice.workflowTransition(any(), any(), any(), any(), any())).thenReturn(wfResponse);
+        bpWorkFlowService.updateBPWorkFlow(ROOT_ORG, ORG, wfRequest, USER_ID, "role");
+        ArgumentCaptor<BatchStatsEvent> captor = ArgumentCaptor.forClass(BatchStatsEvent.class);
+        verify(producer, times(2)).push(eq("bp-stats-topic"), captor.capture());
+        List<BatchStatsEvent> events = captor.getAllValues();
+        BatchStatsEvent pendingEvent = events.stream()
+                .filter(e -> Constants.BATCH_STATS_FIELD_PENDING.equals(e.getField()))
+                .findFirst().orElse(null);
+        assertNotNull(pendingEvent, "Expected pending decrement event");
+        assertEquals(-1L, pendingEvent.getDelta());
+        BatchStatsEvent withdrawnEvent = events.stream()
+                .filter(e -> Constants.BATCH_STATS_FIELD_WITHDRAWN.equals(e.getField()))
+                .findFirst().orElse(null);
+        assertNotNull(withdrawnEvent, "Expected withdrawn increment event");
+        assertEquals(1L, withdrawnEvent.getDelta());
+    }
+
+    @Test
+    void testUpdateBPWorkFlow_doesNotPublishBatchStats_whenTransitionResponseDataIsNull() {
+        wfRequest = buildSkipValidationRequest();
+        stubSkipValidationAndConflictCheck();
+        Response wfResponse = new Response();
+        when(workflowservice.workflowTransition(any(), any(), any(), any(), any())).thenReturn(wfResponse);
+        bpWorkFlowService.updateBPWorkFlow(ROOT_ORG, ORG, wfRequest, USER_ID, "role");
+        verify(producer, never()).push(any(), any(BatchStatsEvent.class));
+    }
+
+    @Test
+    void testUpdateBPWorkFlow_doesNotPublishBatchStats_whenTransitionStatusHasNoStatsEvent() {
+        wfRequest = buildSkipValidationRequest();
+        stubSkipValidationAndConflictCheck();
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put(Constants.STATUS, Constants.SEND_FOR_PC_APPROVAL);
+        Response wfResponse = new Response();
+        wfResponse.put(Constants.DATA, dataMap);
+        when(workflowservice.workflowTransition(any(), any(), any(), any(), any())).thenReturn(wfResponse);
+        bpWorkFlowService.updateBPWorkFlow(ROOT_ORG, ORG, wfRequest, USER_ID, "role");
+        verify(producer, never()).push(any(), any(BatchStatsEvent.class));
+    }
+
+    @Test
+    void testUpdateBPWorkFlow_publishesPendingDecrementEvent_whenTransitionResultIsApproved() {
+        wfRequest = buildSkipValidationRequest();
+        stubSkipValidationAndConflictCheck();
+        when(configuration.getBpBatchStatsTopic()).thenReturn("bp-stats-topic");
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put(Constants.STATUS, Constants.APPROVED_STATE);
+        Response wfResponse = new Response();
+        wfResponse.put(Constants.DATA, dataMap);
+        when(workflowservice.workflowTransition(any(), any(), any(), any(), any())).thenReturn(wfResponse);
+        bpWorkFlowService.updateBPWorkFlow(ROOT_ORG, ORG, wfRequest, USER_ID, "role");
+        ArgumentCaptor<BatchStatsEvent> captor = ArgumentCaptor.forClass(BatchStatsEvent.class);
+        verify(producer, times(1)).push(eq("bp-stats-topic"), captor.capture());
+        BatchStatsEvent event = captor.getValue();
+        assertEquals(Constants.BATCH_STATS_FIELD_PENDING, event.getField());
+        assertEquals(-1L, event.getDelta());
+        assertEquals(BATCH_ID, event.getBatchId());
+    }
+
+    @Test
+    void testUpdateBPWorkFlow_publishesTwoBatchStatsEvents_whenTransitionResultIsRejected() {
+        wfRequest = buildSkipValidationRequest();
+        stubSkipValidationAndConflictCheck();
+        when(configuration.getBpBatchStatsTopic()).thenReturn("bp-stats-topic");
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put(Constants.STATUS, Constants.REJECTED);
+        Response wfResponse = new Response();
+        wfResponse.put(Constants.DATA, dataMap);
+        when(workflowservice.workflowTransition(any(), any(), any(), any(), any())).thenReturn(wfResponse);
+        bpWorkFlowService.updateBPWorkFlow(ROOT_ORG, ORG, wfRequest, USER_ID, "role");
+        ArgumentCaptor<BatchStatsEvent> captor = ArgumentCaptor.forClass(BatchStatsEvent.class);
+        verify(producer, times(2)).push(eq("bp-stats-topic"), captor.capture());
+        List<BatchStatsEvent> events = captor.getAllValues();
+        BatchStatsEvent pendingEvent = events.stream()
+                .filter(e -> Constants.BATCH_STATS_FIELD_PENDING.equals(e.getField()))
+                .findFirst().orElse(null);
+        assertNotNull(pendingEvent, "Expected pending decrement event");
+        assertEquals(-1L, pendingEvent.getDelta());
+        BatchStatsEvent rejectedEvent = events.stream()
+                .filter(e -> Constants.BATCH_STATS_FIELD_REJECTED.equals(e.getField()))
+                .findFirst().orElse(null);
+        assertNotNull(rejectedEvent, "Expected rejected increment event");
+        assertEquals(1L, rejectedEvent.getDelta());
+        assertEquals(BATCH_ID, rejectedEvent.getBatchId());
+    }
+
+    @Test
+    void testAdminEnrolBPWorkFlow_publishesPendingIncrementEvent_onSuccessfulEnrollment() throws Exception {
+        WfRequest req = getSampleRequest();
+        req.setState("SEND_FOR_PC_APPROVAL");
+        Map<String, Object> batchAttr = Map.of(
+                Constants.BATCH_ATTRIBUTES, "{\"currentBatchSize\":\"100\"}",
+                Constants.START_DATE, Instant.now(),
+                Constants.ENROLMENT_END_DATE, Instant.now().plusSeconds(3600),
+                Constants.NAME, "Test Batch"
+        );
+        when(cassandraOperation.getRecordsByProperties(
+                eq(Constants.KEYSPACE_SUNBIRD_COURSES), eq(Constants.TABLE_COURSE_BATCH), anyMap(), anyList()))
+                .thenReturn(List.of(batchAttr));
+        when(cassandraOperation.getRecordsByProperties(
+                eq(Constants.KEYSPACE_SUNBIRD_COURSES), eq(Constants.TABLE_ENROLMENT_BATCH_LOOKUP), anyMap(), anyList()))
+                .thenReturn(Collections.emptyList());
+        when(contentReadService.getServiceNameDetails(COURSE_ID))
+                .thenReturn(Map.of("wfApprovalType", "service", "primaryCategory", "Course"));
+        when(wfStatusRepo.findByApplicationId(BATCH_ID)).thenReturn(Collections.emptyList());
+        when(wfStatusRepo.findByServiceNameAndUserIdAndApplicationId(any(), any(), any()))
+                .thenReturn(Collections.emptyList());
+        when(wfStatusRepo.save(any(WfStatusEntity.class))).thenReturn(new WfStatusEntity());
+        when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20);
+        when(mapper.writeValueAsString(any())).thenReturn("[]");
+        when(configuration.getBpBatchStatsTopic()).thenReturn("bp-stats-topic");
+        when(configuration.getWorkflowApplicationTopic()).thenReturn("wf-topic");
+        doReturn(false).when(bpWorkFlowService).scheduleConflictCheck(any());
+        bpWorkFlowService.adminEnrolBPWorkFlow(ROOT_ORG, ORG, req);
+        ArgumentCaptor<BatchStatsEvent> captor = ArgumentCaptor.forClass(BatchStatsEvent.class);
+        verify(producer).push(eq("bp-stats-topic"), captor.capture());
+        BatchStatsEvent event = captor.getValue();
+        assertEquals(Constants.BATCH_STATS_FIELD_PENDING, event.getField());
+        assertEquals(1L, event.getDelta());
+        assertEquals(BATCH_ID, event.getBatchId());
+    }
+
+    @Test
+    void testEnrolBPWorkFlow_publishesPendingIncrementEvent_onSuccessfulEnrollment() throws Exception {
+        wfRequest = getRequest();
+        Map<String, Object> batchAttr = Map.of(
+                Constants.BATCH_ATTRIBUTES, "{\"currentBatchSize\":\"100\"}",
+                Constants.START_DATE, Instant.now(),
+                Constants.ENROLMENT_END_DATE, Instant.now().plusSeconds(3600),
+                Constants.NAME, "Test Batch"
+        );
+        when(cassandraOperation.getRecordsByProperties(
+                eq(Constants.KEYSPACE_SUNBIRD_COURSES), eq(Constants.TABLE_COURSE_BATCH), anyMap(), anyList()))
+                .thenReturn(List.of(batchAttr));
+        when(cassandraOperation.getRecordsByProperties(
+                eq(Constants.KEYSPACE_SUNBIRD_COURSES), eq(Constants.TABLE_ENROLMENT_BATCH_LOOKUP), anyMap(), anyList()))
+                .thenReturn(Collections.emptyList());
+        when(contentReadService.getServiceNameDetails(any()))
+                .thenReturn(Map.of("wfApprovalType", "", "primaryCategory", "Course"));
+        when(wfStatusRepo.findByApplicationId(any())).thenReturn(Collections.emptyList());
+        when(wfStatusRepo.save(any(WfStatusEntity.class))).thenReturn(new WfStatusEntity());
+        when(mapper.writeValueAsString(any())).thenReturn("[]");
+        when(configuration.getBpBatchStatsTopic()).thenReturn("bp-stats-topic");
+        when(configuration.getWorkflowApplicationTopic()).thenReturn("wf-topic");
+        doReturn(false).when(bpWorkFlowService).scheduleConflictCheck(any());
+        Response response = bpWorkFlowService.enrolBPWorkFlow(ROOT_ORG, ORG, wfRequest);
+        assertEquals(HttpStatus.OK, response.get(Constants.STATUS));
+        ArgumentCaptor<BatchStatsEvent> captor = ArgumentCaptor.forClass(BatchStatsEvent.class);
+        verify(producer).push(eq("bp-stats-topic"), captor.capture());
+        BatchStatsEvent event = captor.getValue();
+        assertEquals(Constants.BATCH_STATS_FIELD_PENDING, event.getField());
+        assertEquals(1L, event.getDelta());
     }
 
 }
