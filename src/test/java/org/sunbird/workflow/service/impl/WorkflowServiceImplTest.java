@@ -1209,7 +1209,9 @@ class WorkflowServiceImplTest {
 
         // Ensure the file is placed where the service expects it
         Path targetPath = Paths.get(Constants.LOCAL_BASE_PATH, fileName);
-        Files.createDirectories(targetPath.getParent());
+        if (!Files.isDirectory(targetPath.getParent())) {
+            Files.createDirectories(targetPath.getParent());
+        }
         Files.write(targetPath, fileContent.getBytes());
 
         // Act
