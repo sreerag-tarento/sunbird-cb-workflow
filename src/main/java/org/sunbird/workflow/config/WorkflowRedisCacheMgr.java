@@ -28,7 +28,7 @@ public class WorkflowRedisCacheMgr {
     private final CassandraOperation cassandraOperation;
     private final Logger logger = LoggerFactory.getLogger(WorkflowRedisCacheMgr.class);
 
-    public WorkflowRedisCacheMgr(@Qualifier("jedisWorkflowPopulationPool") JedisPool jedisPool,
+    public WorkflowRedisCacheMgr(JedisPool jedisPool,
                                  WfStatusRepo wfStatusRepo,
                                  Configuration configuration,
                                  CassandraOperation cassandraOperation) {
