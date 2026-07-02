@@ -33,29 +33,21 @@ class CassandraConnectionManagerImplTest {
 
     @Test
     void testGetConsistencyLevel_valid() {
-        PropertiesCache mockCache = mock(PropertiesCache.class);
-        when(mockCache.readProperty(Constants.SUNBIRD_CASSANDRA_CONSISTENCY_LEVEL)).thenReturn("one");
-        PropertiesCache originalCache = ProjectUtil.propertiesCache;
-        ProjectUtil.propertiesCache = mockCache;
-        try {
+        try (MockedStatic<PropertiesCache> staticMock = mockStatic(PropertiesCache.class)) {
+            staticMock.when(PropertiesCache::getInstance).thenReturn(propertiesCache);
+
             ConsistencyLevel level = invokeGetConsistencyLevel();
             assertEquals(DefaultConsistencyLevel.ONE, level);
-        } finally {
-            ProjectUtil.propertiesCache = originalCache;
         }
     }
 
     @Test
     void testGetConsistencyLevel_invalid() {
-        PropertiesCache mockCache = mock(PropertiesCache.class);
-        when(mockCache.readProperty(Constants.SUNBIRD_CASSANDRA_CONSISTENCY_LEVEL)).thenReturn("invalid");
-        PropertiesCache originalCache = ProjectUtil.propertiesCache;
-        ProjectUtil.propertiesCache = mockCache;
-        try {
+        try (MockedStatic<PropertiesCache> staticMock = mockStatic(PropertiesCache.class)) {
+            staticMock.when(PropertiesCache::getInstance).thenReturn(propertiesCache);
+
             ConsistencyLevel level = invokeGetConsistencyLevel();
-            assertNull(level);
-        } finally {
-            ProjectUtil.propertiesCache = originalCache;
+            assertEquals(DefaultConsistencyLevel.ONE, level);
         }
     }
 

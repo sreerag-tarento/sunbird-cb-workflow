@@ -8,7 +8,6 @@ import org.sunbird.workflow.config.Configuration;
 import org.sunbird.workflow.config.Constants;
 import org.sunbird.workflow.service.ContentReadService;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +29,9 @@ public class ContentReadServiceImpl implements ContentReadService {
      * Service Method to get the service name and other details from the content-service.
      *
      * @param courseId - Blended course -courseId based on this field the content service API is called.
-     * @return - returns Map containing wfApprovalType and primaryCategory
+     * @return - returns the serviceName based on which the enrollment configuration json is fetched.
      */
-    public Map<String, Object> getServiceNameDetails(String courseId) {
+    public String getServiceNameDetails(String courseId) {
         try {
             StringBuilder builder = new StringBuilder(configuration.getContentServiceHost());
             builder.append(configuration.getContentReadEndPoint());
@@ -44,10 +43,7 @@ public class ContentReadServiceImpl implements ContentReadService {
                 Map<String, Object> map = (Map<String, Object>) response.get(Constants.RESULT);
                 if (map.get(Constants.CONTENT) != null) {
                     Map<String, Object> responseObj = (Map<String, Object>) map.get(Constants.CONTENT);
-                    Map<String, Object> result = new HashMap<>();
-                    result.put("wfApprovalType", responseObj.get("wfApprovalType"));
-                    result.put("primaryCategory", responseObj.get("primaryCategory"));
-                    return result;
+                    return (String) responseObj.get("wfApprovalType");
                 }
             }
         } catch (Exception e) {

@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.sunbird.workflow.postgres.entity.WfStatusEntity;
@@ -76,13 +75,6 @@ public interface WfStatusRepo extends JpaRepository<WfStatusEntity, String> {
     @Query(value = "SELECT current_status AS currentStatus, COUNT(*) AS statusCount FROM wingspan.wf_status WHERE application_id IN ?1 GROUP BY current_status" , nativeQuery = true )
     List<Object[]> findStatusCountByApplicationId(List<String> applicationIds);
 
-    /**
-     * Returns the count of wf_status records grouped by current_status for the given batchId (applicationId).
-     * Each row is [current_status (String), count (Long)].
-     * Used to lazily initialise the Redis batch stats cache without multiple round-trips.
-     */
-    @Query(value = "SELECT current_status, COUNT(*) FROM wingspan.wf_status WHERE application_id = :applicationId GROUP BY current_status", nativeQuery = true)
-    List<Object[]> countGroupedByStatusForApplicationId(@Param("applicationId") String applicationId);
 
     @Query(value = "SELECT * FROM wingspan.wf_status WHERE " +
             "current_status IN (?1) AND " +
@@ -166,8 +158,5 @@ public interface WfStatusRepo extends JpaRepository<WfStatusEntity, String> {
 
     @Query(value = "select * from wingspan.wf_status where userid = ?1 and service_name = ?2 order by lastupdated_on desc", nativeQuery = true)
     List<WfStatusEntity> findByUserIdAndServiceNameOrderByLastUpdatedOnDesc(String userId, String serviceName);
-
-    @Query(value = "SELECT application_id, current_status, COUNT(*) FROM wingspan.wf_status WHERE application_id IN :applicationIds GROUP BY application_id, current_status", nativeQuery = true)
-    List<Object[]> countGroupedByStatusForApplicationIds(@Param("applicationIds") List<String> applicationIds);
 }
 

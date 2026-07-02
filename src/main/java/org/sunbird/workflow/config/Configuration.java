@@ -308,6 +308,9 @@ public class Configuration {
     @Value("${cbp.portal.host}")
     private String cbpPortalHost;
 
+    @Value("${ai.assessment.spv.admin.email}")
+    private List<String> aiAssessmentSpvAdminEmail;
+
     @Value("${sunbird_time_zone}")
     private String sunbirdTimeZone;
 
@@ -1022,38 +1025,6 @@ public class Configuration {
         return Arrays.asList(aiAssessmentApproveRejectRoles.split(","));
     }
 
-    public String getAiAssessmentSpvEmailSubject() {
-        return aiAssessmentSpvEmailSubject;
-    }
-
-    public String getAiAssessmentSpvEmailBody() {
-        return aiAssessmentSpvEmailBody;
-    }
-
-    public String getAiAssessmentApprovedEmailSubject() {
-        return aiAssessmentApprovedEmailSubject;
-    }
-
-    public String getAiAssessmentApprovedEmailBody() {
-        return aiAssessmentApprovedEmailBody;
-    }
-
-    public String getAiAssessmentRejectedEmailSubject() {
-        return aiAssessmentRejectedEmailSubject;
-    }
-
-    public String getAiAssessmentRejectedEmailBody() {
-        return aiAssessmentRejectedEmailBody;
-    }
-
-    public String getAiAssessmentApprovalLink() {
-        return aiAssessmentApprovalLink;
-    }
-
-    public String getCbpPortalHost() {
-        return cbpPortalHost;
-    }
-
     public String getSunbirdTimeZone() { return sunbirdTimeZone; }
 
     public void setSunbirdTimeZone(String sunbirdTimeZone) { this.sunbirdTimeZone = sunbirdTimeZone; }
@@ -1122,5 +1093,43 @@ public class Configuration {
     public void setBpBatchStatsSyncPageSize(int bpBatchStatsSyncPageSize) {
         this.bpBatchStatsSyncPageSize = bpBatchStatsSyncPageSize;
     }
+
+    public String getAiAssessmentSpvEmailSubject() {
+        return aiAssessmentSpvEmailSubject;
+    }
+
+    public String getAiAssessmentSpvEmailBody() {
+        return aiAssessmentSpvEmailBody;
+    }
+
+    public String getAiAssessmentApprovedEmailSubject() {
+        return aiAssessmentApprovedEmailSubject;
+    }
+
+    public String getAiAssessmentApprovedEmailBody() {
+        return aiAssessmentApprovedEmailBody;
+    }
+
+    public String getAiAssessmentRejectedEmailSubject() {
+        return aiAssessmentRejectedEmailSubject;
+    }
+
+    public String getAiAssessmentRejectedEmailBody() {
+        return aiAssessmentRejectedEmailBody;
+    }
+
+    public String getAiAssessmentApprovalLink() {
+        return aiAssessmentApprovalLink;
+    }
+
+    public String getCbpPortalHost() {
+        return cbpPortalHost;
+    }
+
+    public List<String> getAiAssessmentSpvAdminEmail() {
+        return aiAssessmentSpvAdminEmail;
+    }
+
+
 
 }

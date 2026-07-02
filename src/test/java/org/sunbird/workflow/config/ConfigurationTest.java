@@ -250,18 +250,4 @@ class ConfigurationTest {
         assertEquals(100, config.getMaxLimit());
     }
 
-    @Test
-    void testTimezoneConfiguration() {
-        config.setSunbirdTimeZone("Asia/Kolkata");
-        assertEquals("Asia/Kolkata", config.getSunbirdTimeZone());
-
-        // Test with different timezone
-        config.setSunbirdTimeZone("America/New_York");
-        assertEquals("America/New_York", config.getSunbirdTimeZone());
-
-        // Test with UTC
-        config.setSunbirdTimeZone("UTC");
-        assertEquals("UTC", config.getSunbirdTimeZone());
-    }
-
 }

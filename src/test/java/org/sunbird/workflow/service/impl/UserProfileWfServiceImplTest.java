@@ -676,13 +676,15 @@ class UserProfileWfServiceImplTest {
                 .thenReturn(successfulResponse)
                 .thenReturn(failedResponse);
 
+        when(mapper.writeValueAsString(any())).thenReturn("{}");
+
         Method method = UserProfileWfServiceImpl.class.getDeclaredMethod(
                 "updateUserProfileData", String.class, Map.class, List.class, Map.class);
         method.setAccessible(true);
 
         // SUCCESS CASE
         method.invoke(userProfileWfServiceImpl, userId, profileDetails, wfRequests, userDetails);
-        verify(redisCacheMgr).deleteCache(Constants.USER_BASIC_PROFILE_REDIS_KEY_PREFIX + userId);
+        verify(redisCacheMgr).putInBasicProfileCache(anyString(), eq("{}"), anyInt());
 
         // FAILURE CASE
         method.invoke(userProfileWfServiceImpl, userId, profileDetails, wfRequests, userDetails);
