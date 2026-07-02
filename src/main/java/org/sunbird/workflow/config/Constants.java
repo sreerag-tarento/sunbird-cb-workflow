@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class Constants {
 
@@ -466,5 +467,26 @@ public class Constants {
 	public static final String DATE_FORMAT = "dd-MM-yyyy HH:mm:ss";
 	public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT);
 	public static final ZoneId IST_ZONE_ID = ZoneId.of("Asia/Kolkata");
+	public static final String PRIMARY_CATEGORY = "primaryCategory";
+	public static final String BLENDED_PROGRAM = "Blended Program";
+	public static final String WF_APPROVAL_TYPE = "wfApprovalType";
+
+	public static final String BP_BATCH_STATS_PREFIX = "bp:batch:enrollment:stats:";
+	public static final String BATCH_STATS_FIELD_PENDING = "pending";
+	public static final String BATCH_STATS_FIELD_WITHDRAWN = "withdrawn";
+	public static final String BATCH_STATS_FIELD_REJECTED = "rejected";
+	public static final String BATCH_STATS_FIELD_APPROVED = "approved";
+	public static final Set<String> BATCH_STATS_TERMINAL_STATUSES = Set.of(APPROVED_STATE, REJECTED, WITHDRAWN, REMOVED);
+	public static final String CONTENT_TYPE_FIELD = "contentType";
+	public static final String COURSE = "Course";
+	public static final String COURSE_CATEGORY = "courseCategory";
+	public static final String BLENDED_PROGRAM_CATEGORY = "blended program";
+	public static final String LIVE = "Live";
+	public static final String AVG_RATING = "avgRating";
+	public static final String CREATED_ON = "createdOn";
+	public static final String DESC = "desc";
+	public static final String BATCHES = "batches";
+	public static final String FACETS = "facets";
+	public static final String SORT_BY = "sort_by";
 
 }

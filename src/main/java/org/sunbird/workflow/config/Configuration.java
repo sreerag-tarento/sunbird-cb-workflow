@@ -309,7 +309,34 @@ public class Configuration {
     private String cbpPortalHost;
 
     @Value("${ai.assessment.spv.admin.email}")
-    private String aiAssessmentSpvAdminEmail;
+    private List<String> aiAssessmentSpvAdminEmail;
+
+    @Value("${sunbird_time_zone}")
+    private String sunbirdTimeZone;
+
+    @Value("${kafka.topics.bp.batch.stats}")
+    private String bpBatchStatsTopic;
+
+    @Value("${bp.batch.stats.cache.ttl}")
+    private int bpBatchStatsCacheTtl;
+
+    @Value("${bp.batch.stats.cache.index}")
+    private int bpBatchStatsCacheIndex;
+
+    @Value("${bp.batch.stats.sync.db.chunk.size:50}")
+    private int bpBatchStatsSyncDbChunkSize;
+
+    @Value("${sb.search.service.host}")
+    private String sbSearchServiceHost;
+
+    @Value("${sb.composite.v4.search}")
+    private String sbCompositeV4Search;
+
+    @Value("${bp.batch.stats.sync.redis.pipeline.size:100}")
+    private int bpBatchStatsSyncRedisPipelineSize;
+
+    @Value("${bp.batch.stats.sync.page.size:100}")
+    private int bpBatchStatsSyncPageSize;
 
     public String getAdminBlendedProgramEnrolEndPoint() {
         return adminBlendedProgramEnrolEndPoint;
@@ -998,6 +1025,75 @@ public class Configuration {
         return Arrays.asList(aiAssessmentApproveRejectRoles.split(","));
     }
 
+    public String getSunbirdTimeZone() { return sunbirdTimeZone; }
+
+    public void setSunbirdTimeZone(String sunbirdTimeZone) { this.sunbirdTimeZone = sunbirdTimeZone; }
+
+
+    public String getBpBatchStatsTopic() {
+        return bpBatchStatsTopic;
+    }
+
+    public void setBpBatchStatsTopic(String bpBatchStatsTopic) {
+        this.bpBatchStatsTopic = bpBatchStatsTopic;
+    }
+
+    public int getBpBatchStatsCacheTtl() {
+        return bpBatchStatsCacheTtl;
+    }
+
+    public void setBpBatchStatsCacheTtl(int bpBatchStatsCacheTtl) {
+        this.bpBatchStatsCacheTtl = bpBatchStatsCacheTtl;
+    }
+
+    public int getBpBatchStatsCacheIndex() {
+        return bpBatchStatsCacheIndex;
+    }
+
+    public void setBpBatchStatsCacheIndex(int bpBatchStatsCacheIndex) {
+        this.bpBatchStatsCacheIndex = bpBatchStatsCacheIndex;
+    }
+
+    public int getBpBatchStatsSyncDbChunkSize() {
+        return bpBatchStatsSyncDbChunkSize;
+    }
+
+    public void setBpBatchStatsSyncDbChunkSize(int bpBatchStatsSyncDbChunkSize) {
+        this.bpBatchStatsSyncDbChunkSize = bpBatchStatsSyncDbChunkSize;
+    }
+
+    public String getSbSearchServiceHost() {
+        return sbSearchServiceHost;
+    }
+
+    public void setSbSearchServiceHost(String sbSearchServiceHost) {
+        this.sbSearchServiceHost = sbSearchServiceHost;
+    }
+
+    public String getSbCompositeV4Search() {
+        return sbCompositeV4Search;
+    }
+
+    public void setSbCompositeV4Search(String sbCompositeV4Search) {
+        this.sbCompositeV4Search = sbCompositeV4Search;
+    }
+
+    public int getBpBatchStatsSyncRedisPipelineSize() {
+        return bpBatchStatsSyncRedisPipelineSize;
+    }
+
+    public void setBpBatchStatsSyncRedisPipelineSize(int bpBatchStatsSyncRedisPipelineSize) {
+        this.bpBatchStatsSyncRedisPipelineSize = bpBatchStatsSyncRedisPipelineSize;
+    }
+
+    public int getBpBatchStatsSyncPageSize() {
+        return bpBatchStatsSyncPageSize;
+    }
+
+    public void setBpBatchStatsSyncPageSize(int bpBatchStatsSyncPageSize) {
+        this.bpBatchStatsSyncPageSize = bpBatchStatsSyncPageSize;
+    }
+
     public String getAiAssessmentSpvEmailSubject() {
         return aiAssessmentSpvEmailSubject;
     }
@@ -1031,6 +1127,9 @@ public class Configuration {
     }
 
     public List<String> getAiAssessmentSpvAdminEmail() {
-        return Arrays.asList(aiAssessmentSpvAdminEmail.split(",", -1));
+        return aiAssessmentSpvAdminEmail;
     }
+
+
+
 }
