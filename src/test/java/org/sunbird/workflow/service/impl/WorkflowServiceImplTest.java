@@ -1207,9 +1207,11 @@ class WorkflowServiceImplTest {
         String fileName = "testFile.txt";
         String fileContent = "Hello World!";
 
-        // Ensure the file is placed where the service expects it
         Path targetPath = Paths.get(Constants.LOCAL_BASE_PATH, fileName);
-        Files.createDirectories(targetPath.getParent());
+        Path parentPath = targetPath.getParent();
+        if (parentPath != null && Files.notExists(parentPath)) {
+            Files.createDirectories(parentPath);
+        }
         Files.write(targetPath, fileContent.getBytes());
 
         // Act

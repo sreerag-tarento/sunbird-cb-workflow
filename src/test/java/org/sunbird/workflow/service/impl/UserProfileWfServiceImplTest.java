@@ -684,7 +684,7 @@ class UserProfileWfServiceImplTest {
 
         // SUCCESS CASE
         method.invoke(userProfileWfServiceImpl, userId, profileDetails, wfRequests, userDetails);
-        verify(redisCacheMgr).putInBasicProfileCache(anyString(), eq("{}"), anyInt());
+        verify(redisCacheMgr).deleteCache("user:basicProfile:userId");
 
         // FAILURE CASE
         method.invoke(userProfileWfServiceImpl, userId, profileDetails, wfRequests, userDetails);
