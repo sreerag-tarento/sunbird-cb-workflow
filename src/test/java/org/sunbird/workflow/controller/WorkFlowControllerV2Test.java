@@ -65,15 +65,16 @@ class WorkFlowControllerV2Test {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("wfId", "wf-001");
 
+        String userAuthToken = "test-auth-token";
         Response expectedResponse = new Response();
         expectedResponse.setResponseCode(HttpStatus.OK);
 
-        when(workFlowServiceV2.workflowTransition(rootOrg, org, requestBody))
+        when(workFlowServiceV2.workflowTransition(rootOrg, org, requestBody, userAuthToken))
                 .thenReturn(expectedResponse);
 
         // Act
         ResponseEntity<Response> responseEntity = workFlowControllerV2.wfTransition(
-                rootOrg, org, requestBody);
+                rootOrg, org, requestBody, userAuthToken);
 
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());

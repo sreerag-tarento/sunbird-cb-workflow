@@ -11,11 +11,13 @@ import org.sunbird.workflow.config.Constants;
 import org.sunbird.workflow.exception.ApplicationException;
 import org.sunbird.workflow.exception.BadRequestException;
 import org.sunbird.workflow.exception.InvalidDataInputException;
+import org.sunbird.workflow.models.AiAssessmentApprovalEvent;
 import org.sunbird.workflow.models.Response;
 import org.sunbird.workflow.models.SearchCriteria;
 import org.sunbird.workflow.models.WfRequest;
 import org.sunbird.workflow.postgres.entity.WfStatusEntity;
 import org.sunbird.workflow.postgres.repo.WfStatusRepo;
+import org.sunbird.workflow.producer.Producer;
 import org.sunbird.workflow.service.impl.WorkflowServiceImpl;
 import org.sunbird.workflow.utils.AccessTokenValidator;
 
@@ -23,8 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.datastax.dse.driver.internal.core.graph.SearchPredicate.token;
 
 @Service
 public class AiAssessmentServiceImpl extends WorkflowServiceImpl {
@@ -35,20 +35,30 @@ public class AiAssessmentServiceImpl extends WorkflowServiceImpl {
     private final Configuration configuration;
     private final WfStatusRepo wfStatusRepo;
     private final UserProfileWfService userProfileWfService;
+    private final Producer producer;
 
-    public AiAssessmentServiceImpl(AccessTokenValidator accessTokenValidator, Configuration configuration, WfStatusRepo wfStatusRepo, UserProfileWfService userProfileWfService) {
+    public AiAssessmentServiceImpl(AccessTokenValidator accessTokenValidator, Configuration configuration,
+                                   WfStatusRepo wfStatusRepo, UserProfileWfService userProfileWfService,
+                                   Producer producer) {
         this.accessTokenValidator = accessTokenValidator;
         this.configuration = configuration;
         this.wfStatusRepo = wfStatusRepo;
         this.userProfileWfService = userProfileWfService;
+        this.producer = producer;
     }
 
     public Response aiAssessmentWorkflowTransition(WfRequest wfRequest, String token) {
-        java.util.List<String> actorRoles = accessTokenValidator.fetchUserRolesFromToken(token);
+        List<String> actorRoles = accessTokenValidator.fetchUserRolesFromToken(token);
         log.info("Actor roles: {}", actorRoles);
         validateRoles(wfRequest.getAction(), actorRoles);
         validateAiAssessmentWfRequest(wfRequest);
-        return workflowTransition(wfRequest.getRootOrgId(), wfRequest.getRootOrgId(), wfRequest);
+        Response response = workflowTransition(wfRequest.getRootOrgId(), wfRequest.getRootOrgId(), wfRequest);
+        if (Constants.APPROVE.equalsIgnoreCase(wfRequest.getAction())) {
+            producer.push(configuration.getAiAssessmentTopic(),
+                    new AiAssessmentApprovalEvent(wfRequest, token));
+            log.info("Pushed to AI Assessment topic for APPROVED userId: {}", wfRequest.getUserId());
+        }
+        return response;
     }
 
     private void validateRoles(String action, List<String> actorRoles) {

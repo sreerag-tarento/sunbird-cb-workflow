@@ -257,13 +257,8 @@ public class WorkflowServiceImpl implements Workflowservice {
 			if (Constants.AI_ASSESSMENT_SERVICE_NAME
 					.equalsIgnoreCase(applicationStatus.getServiceName())) {
 
-				if (Constants.APPROVED
-						.equalsIgnoreCase(applicationStatus.getCurrentStatus())) {
-					producer.push(configuration.getAiAssessmentTopic(), wfRequest);
-					log.info("Pushed to AI Assessment topic for APPROVED userId: {}",
-							wfRequest.getUserId());
-
-				} else if (Constants.PENDING
+				// APPROVED push is handled by AiAssessmentServiceImpl (needs auth token)
+				if (Constants.PENDING
 						.equalsIgnoreCase(applicationStatus.getCurrentStatus())
 						|| Constants.REJECTED
 						.equalsIgnoreCase(applicationStatus.getCurrentStatus())) {

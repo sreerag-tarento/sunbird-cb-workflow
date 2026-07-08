@@ -16,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.sunbird.workflow.config.Configuration;
 import org.sunbird.workflow.config.Constants;
+import org.sunbird.workflow.models.AiAssessmentApprovalEvent;
 import org.sunbird.workflow.models.WfRequest;
 import org.sunbird.workflow.producer.Producer;
 import org.sunbird.workflow.service.Workflowservice;
@@ -60,7 +61,8 @@ public class WorkflowApplicationConsumer {
 
     private void processAiAssessmentApproval(String strData) {
         try {
-            WfRequest wfRequest = mapper.readValue(strData, WfRequest.class);
+            AiAssessmentApprovalEvent event = mapper.readValue(strData, AiAssessmentApprovalEvent.class);
+            WfRequest wfRequest = event.getWfRequest();
             logger.info("Received AI Assessment APPROVED for userId: {}",
                     wfRequest.getUserId());
             List<String> existingRoles = fetchUserRoles(wfRequest.getUserId(),
@@ -74,7 +76,6 @@ public class WorkflowApplicationConsumer {
                         wfRequest.getUserId());
             }
 
-
             Map<String, Object> requestMap = new HashMap<>();
             Map<String, Object> innerRequest = new HashMap<>();
             innerRequest.put(Constants.USER_ID, wfRequest.getUserId());
@@ -85,9 +86,11 @@ public class WorkflowApplicationConsumer {
             String requestBody = mapper.writeValueAsString(requestMap);
             logger.info("Role assign request body: {}", requestBody);
 
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            if (StringUtils.isNotBlank(event.getXAuthToken())) {
+                headers.set(Constants.X_AUTH_TOKEN, event.getXAuthToken());
+            }
             HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(

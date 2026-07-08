@@ -398,7 +398,7 @@ class UserProfileWfServiceImplTest {
 
         doReturn(wfStatusEntity).when(wfStatusRepo).findByApplicationIdAndWfId(any(), any());
 
-        assertDoesNotThrow(()-> userProfileWfServiceImpl.updateUserProfileV2(List.of(wfRequest), "userId"));
+        assertDoesNotThrow(()-> userProfileWfServiceImpl.updateUserProfileV2(List.of(wfRequest), "userId", null));
     }
 
     @Test
@@ -423,7 +423,7 @@ class UserProfileWfServiceImplTest {
         doReturn(wfStatusEntity).when(wfStatusRepo).findByApplicationIdAndWfId(any(), any());
         doReturn(new HashMap<>()).when(userProfileWfServiceImpl).updateRequestWithWF(any(), any(), any());
 
-        assertDoesNotThrow(()-> userProfileWfServiceImpl.updateUserProfileV2(List.of(wfRequest), "userId"));
+        assertDoesNotThrow(()-> userProfileWfServiceImpl.updateUserProfileV2(List.of(wfRequest), "userId", null));
     }
 
     @Test
@@ -525,7 +525,7 @@ class UserProfileWfServiceImplTest {
         readData.put(Constants.RESPONSE_CODE, "FAIL");
         readData.put(Constants.PARAMS, Map.of(Constants.ERROR_MESSAGE, "Not Found"));
 
-        assertDoesNotThrow(()-> userProfileWfServiceImpl.updateUserProfileV2(wfRequests, "user1"));
+        assertDoesNotThrow(()-> userProfileWfServiceImpl.updateUserProfileV2(wfRequests, "user1", (String) null));
     }
 
     @Test

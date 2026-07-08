@@ -119,18 +119,20 @@ class WorkFlowServiceImplV2PrivateMethodTest {
         when(configuration.getWorkFlowNotificationTopicV2()).thenReturn("notificationTopic");
         when(configuration.getWorkflowApplicationTopicV2()).thenReturn("applicationTopic");
 
+        String userToken = "test-auth-token";
         Method method = WorkFlowServiceImplV2.class
-                .getDeclaredMethod("pushWorkflowEvents", String.class, String.class, List.class);
+                .getDeclaredMethod("pushWorkflowEvents", String.class, String.class, List.class, String.class);
         method.setAccessible(true);
 
         // Act
-        method.invoke(workFlowService, serviceName, userId, wfRequestsForEvent);
+        method.invoke(workFlowService, serviceName, userId, wfRequestsForEvent, userToken);
 
         // Assert
         Map<String, Object> expectedPayload = new HashMap<>();
         expectedPayload.put(Constants.USER_ID, userId);
         expectedPayload.put(Constants.SERVICE_NAME, serviceName);
         expectedPayload.put(Constants.WORKFLOW_REQUESTS, wfRequestsForEvent);
+        expectedPayload.put(Constants.X_AUTH_TOKEN, userToken);
 
         verify(producer).push("notificationTopic", expectedPayload);
         verify(producer).push("applicationTopic", expectedPayload);
@@ -152,11 +154,11 @@ class WorkFlowServiceImplV2PrivateMethodTest {
                 .push(eq("notificationTopic"), any());
 
         Method method = WorkFlowServiceImplV2.class
-                .getDeclaredMethod("pushWorkflowEvents", String.class, String.class, List.class);
+                .getDeclaredMethod("pushWorkflowEvents", String.class, String.class, List.class, String.class);
         method.setAccessible(true);
 
         // Act
-        method.invoke(workFlowService, serviceName, userId, wfRequestsForEvent);
+        method.invoke(workFlowService, serviceName, userId, wfRequestsForEvent, "test-auth-token");
 
         // Assert
         // verifies producer.push was attempted
@@ -731,10 +733,10 @@ class WorkFlowServiceImplV2PrivateMethodTest {
 
         // Act
         Method method = WorkFlowServiceImplV2.class.getDeclaredMethod("updateApplicationStatus",
-                WfStatusEntity.class, WfRequest.class, String.class, String.class, String.class, WorkFlowModel.class);
+                WfStatusEntity.class, WfRequest.class, String.class, String.class, String.class, WorkFlowModel.class, String.class);
         method.setAccessible(true);
 
-        method.invoke(workFlowService, applicationStatus, wfRequest, nextState, userId, role, workFlowModel);
+        method.invoke(workFlowService, applicationStatus, wfRequest, nextState, userId, role, workFlowModel, "test-auth-token");
 
         // Assert
         verify(wfStatusRepo, times(1)).save(any());
@@ -757,12 +759,12 @@ class WorkFlowServiceImplV2PrivateMethodTest {
 
         // Act
         Method method = WorkFlowServiceImplV2.class.getDeclaredMethod("updateApplicationStatus",
-                WfStatusEntity.class, WfRequest.class, String.class, String.class, String.class, WorkFlowModel.class);
+                WfStatusEntity.class, WfRequest.class, String.class, String.class, String.class, WorkFlowModel.class, String.class);
         method.setAccessible(true);
 
         // Assert
         Exception exception = assertThrows(InvocationTargetException.class, () -> {
-            method.invoke(workFlowService, applicationStatus, wfRequest, nextState, userId, role, workFlowModel);
+            method.invoke(workFlowService, applicationStatus, wfRequest, nextState, userId, role, workFlowModel, "test-auth-token");
         });
 
         assertTrue(exception.getCause() instanceof BadRequestException);

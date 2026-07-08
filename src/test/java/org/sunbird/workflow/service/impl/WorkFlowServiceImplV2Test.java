@@ -15,6 +15,7 @@ import org.sunbird.workflow.exception.ApplicationException;
 import org.sunbird.workflow.exception.BadRequestException;
 import org.sunbird.workflow.models.*;
 import org.sunbird.workflow.postgres.repo.WfStatusRepo;
+import org.sunbird.workflow.utils.AccessTokenValidator;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,6 +35,7 @@ class WorkFlowServiceImplV2Test {
     @Mock private Configuration configuration;
     @Mock private RequestServiceImpl requestServiceImpl;
     @Mock private RedisCacheMgr redisCacheMgr;
+    @Mock private AccessTokenValidator accessTokenValidator;
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -66,6 +68,7 @@ class WorkFlowServiceImplV2Test {
 
         requestBody.put(Constants.REQUEST, List.of(wfRequest));
 
+        when(accessTokenValidator.fetchUserIdFromAccessToken(anyString())).thenReturn("requestUser1");
         when(wfStatusRepo.findByRootOrgAndOrgAndApplicationIdAndWfId(any(), any(), any(), any())).thenReturn(null);
         when(requestServiceImpl.fetchResultUsingGet(any())).thenReturn(Map.of(
                 Constants.RESULT, Map.of(Constants.RESPONSE, Map.of(Constants.VALUE, "{}"))
@@ -98,7 +101,7 @@ class WorkFlowServiceImplV2Test {
             }
         });
 
-        Response response = service.workflowTransition("root", "org", requestBody);
+        Response response = service.workflowTransition("root", "org", requestBody, "test-auth-token");
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.get(Constants.STATUS));
     }

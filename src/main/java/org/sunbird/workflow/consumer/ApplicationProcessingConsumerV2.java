@@ -60,6 +60,7 @@ public class ApplicationProcessingConsumerV2 {
             });
             String userId = (String) workflowEventObj.get(Constants.USER_ID);
             String serviceName = (String) workflowEventObj.get(Constants.SERVICE_NAME);
+            String userToken = (String) workflowEventObj.get(Constants.X_AUTH_TOKEN);
             @SuppressWarnings("unchecked")
             List<WfRequest> wfRequests = mapper.convertValue(workflowEventObj.get(Constants.WORKFLOW_REQUESTS),
                     new TypeReference<List<WfRequest>>() {
@@ -68,7 +69,7 @@ public class ApplicationProcessingConsumerV2 {
             try {
                 logger.debug("Processing workflow request for user ID: {}", userId);
 
-                applicationProcessingServiceImplV2.processWfApplicationRequest(wfRequests, serviceName, userId);
+                applicationProcessingServiceImplV2.processWfApplicationRequest(wfRequests, serviceName, userId, userToken);
                 applicationProcessingServiceImplV2.updateDepartmentToPortalDBs(wfRequests);
                 createAudit(wfRequests);
                 wfRequests.forEach(wfRequest -> {

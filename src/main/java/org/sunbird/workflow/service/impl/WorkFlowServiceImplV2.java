@@ -27,6 +27,7 @@ import org.sunbird.workflow.postgres.entity.WfStatusEntity;
 import org.sunbird.workflow.postgres.repo.WfStatusRepo;
 import org.sunbird.workflow.producer.Producer;
 import org.sunbird.workflow.service.WorkFlowServiceV2;
+import org.sunbird.workflow.utils.AccessTokenValidator;
 import org.sunbird.workflow.utils.CassandraOperation;
 import org.sunbird.workflow.utils.NotificationTriggerService;
 
@@ -65,14 +66,22 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
     @Autowired
     private NotificationTriggerService notificationTriggerService;
 
+    @Autowired
+    private AccessTokenValidator accessTokenValidator;
+
     @Override
-    public Response workflowTransition(String rootOrg, String org, Map<String, Object> requestBody) {
+    public Response workflowTransition(String rootOrg, String org, Map<String, Object> requestBody, String userToken) {
         Response response = new Response();
         List<Object> data = new ArrayList<>();
 
         try {
             String modifiedBy = "";
             String role = "";
+            String requestUserid = accessTokenValidator.fetchUserIdFromAccessToken(userToken);
+            if(StringUtils.isEmpty(requestUserid)){
+                response.setResponseCode(HttpStatus.UNAUTHORIZED);
+                return response;
+            }
 
             Object rawRequest = requestBody.get(Constants.REQUEST);
             if (rawRequest instanceof List) {
@@ -108,7 +117,7 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
                                             break;
                                         }
                                     }
-                                    Map<String, String> changeStatusResponse = changeStatus(rootOrg, org, wfRequest, modifiedBy, role);
+                                    Map<String, String> changeStatusResponse = changeStatus(rootOrg, org, wfRequest, modifiedBy, role, userToken);
                                     String changedStatus = changeStatusResponse.get(Constants.STATUS);
                                     logger.info("Changed status to '{}' for workflow ID: {}", changedStatus, changeStatusResponse.get(Constants.WF_ID_CONSTANT));
 
@@ -128,7 +137,7 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
                             data.add(responseData);
                         }
                         if (!CollectionUtils.isEmpty(wfRequestsForEvent)) {
-                            pushWorkflowEvents(serviceName, userId, wfRequestsForEvent);
+                            pushWorkflowEvents(serviceName, userId, wfRequestsForEvent, userToken);
                         }
                         logger.info("Completed workflowTransition successfully for userId: {}", userId);
                     }
@@ -224,12 +233,13 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
         response.put(Constants.STATUS, HttpStatus.BAD_REQUEST);
     }
 
-    private void pushWorkflowEvents(String serviceName, String userId, List<Object> wfRequestsForEvent) {
+    private void pushWorkflowEvents(String serviceName, String userId, List<Object> wfRequestsForEvent, String userToken) {
         try {
             Map<String, Object> workflowEvent = new HashMap<>();
             workflowEvent.put(Constants.USER_ID, userId);
             workflowEvent.put(Constants.SERVICE_NAME, serviceName);
             workflowEvent.put(Constants.WORKFLOW_REQUESTS, wfRequestsForEvent);
+            workflowEvent.put(Constants.X_AUTH_TOKEN, userToken);
 
             logger.debug("Pushing workflow event to notification topic for userId: {}", userId);
             producer.push(configuration.getWorkFlowNotificationTopicV2(), workflowEvent);
@@ -314,7 +324,7 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
         }
     }
 
-    private Map<String, String> changeStatus(String rootOrg, String org, WfRequest wfRequest, String modifiedBy, String role) {
+    private Map<String, String> changeStatus(String rootOrg, String org, WfRequest wfRequest, String modifiedBy, String role, String userToken) {
         String wfId = wfRequest.getWfId();
         String nextState = null;
         Map<String, String> data = new HashMap<>();
@@ -350,7 +360,7 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
             }
 
             // Update workflow status entity
-            updateApplicationStatus(applicationStatus, wfRequest, nextState, modifiedBy, role, workFlowModel);
+            updateApplicationStatus(applicationStatus, wfRequest, nextState, modifiedBy, role, workFlowModel, userToken);
             // Handle specific fields if applicable
             handleSpecialFields(wfRequest);
 
@@ -387,7 +397,7 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
     }
 
     private void updateApplicationStatus(WfStatusEntity applicationStatus, WfRequest wfRequest, String nextState,
-                                         String modifiedBy, String role, WorkFlowModel workFlowModel) throws IOException {
+                                         String modifiedBy, String role, WorkFlowModel workFlowModel, String userToken) throws IOException {
         WfStatus nextWfStatus = getWfStatus(nextState, workFlowModel);
         boolean inWorkflow = !nextWfStatus.getIsLastState();
         Date currentTime = new Date();
@@ -461,7 +471,7 @@ public class WorkFlowServiceImplV2 implements WorkFlowServiceV2 {
             // Push workflow events
             if (!CollectionUtils.isEmpty(wfRequestsForEvent)) {
                 try {
-                    pushWorkflowEvents(Constants.PROFILE_SERVICE_NAME, userId, wfRequestsForEvent);
+                    pushWorkflowEvents(Constants.PROFILE_SERVICE_NAME, userId, wfRequestsForEvent, userToken);
                     logger.info("Pushed {} workflow events for userId: {}", wfRequestsForEvent.size(), userId);
                 } catch (Exception e) {
                     logger.error("Failed to push workflow events for userId: {}, error={}", userId, e.getMessage(), e);

@@ -114,7 +114,7 @@ class ApplicationProcessingConsumerV2Test {
                 .thenReturn(wfRequests);
 
         doThrow(new RuntimeException("internal error"))
-                .when(appProcessingService).processWfApplicationRequest(any(), anyString(), anyString());
+                .when(appProcessingService).processWfApplicationRequest(any(), anyString(), anyString(), any());
 
         assertDoesNotThrow(() ->consumer.processMessage(cRecord));
     }

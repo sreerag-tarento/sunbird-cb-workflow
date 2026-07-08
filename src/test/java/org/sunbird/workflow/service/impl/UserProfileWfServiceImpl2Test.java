@@ -95,7 +95,7 @@ class UserProfileWfServiceImpl2Test {
         when(configuration.getUserProfileReadEndPoint()).thenReturn("/user/read/" + Constants.USER_ID_VALUE);
 
 
-        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID));
+        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID, null));
 
     }
 
@@ -137,7 +137,7 @@ class UserProfileWfServiceImpl2Test {
         wfStatusEntity.setCurrentStatus(Constants.APPROVED_STATE);
         when(wfStatusRepo.findByApplicationIdAndWfId(APP_ID, WF_ID)).thenReturn(wfStatusEntity);
 
-        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID));
+        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID, null));
 
     }
 
@@ -167,7 +167,7 @@ class UserProfileWfServiceImpl2Test {
         wfStatusEntity.setCurrentStatus(Constants.PROCESSED_STATE);
         when(wfStatusRepo.findByApplicationIdAndWfId(APP_ID, WF_ID)).thenReturn(wfStatusEntity);
 
-        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID));
+        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID, null));
 
     }
 
@@ -196,7 +196,7 @@ class UserProfileWfServiceImpl2Test {
         when(requestServiceImpl.fetchResultUsingGet(any())).thenReturn(readData);
         when(mapper.convertValue(any(), eq(Map.class))).thenReturn(readData);
 
-        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID));
+        assertDoesNotThrow(()-> service.updateUserProfileV2(Collections.singletonList(request), USER_ID, null));
 
     }
 }

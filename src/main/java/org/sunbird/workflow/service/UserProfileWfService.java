@@ -10,7 +10,7 @@ public interface UserProfileWfService {
 
     public void updateUserProfile(WfRequest wfRequest);
 
-    public void updateUserProfileV2(List<WfRequest> wfRequest, String userId);
+    public void updateUserProfileV2(List<WfRequest> wfRequest, String userId, String userToken);
 
     public List<Map<String, Object>> enrichUserData(Map<String, List<WfStatusEntity>> statusEntities, String rootOrg);
 

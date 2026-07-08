@@ -77,15 +77,15 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 				wfRequest.getWfId());
 		if (Constants.PROFILE_SERVICE_NAME.equals(wfRequest.getServiceName())
 				&& Constants.APPROVED_STATE.equals(wfStatusEntity.getCurrentStatus())) {
-			updateProfile(wfRequest);
+			updateProfile(wfRequest, null);
 		}
 		if (Constants.USER_PROFILE_FLAG_SERVICE.equals(wfRequest.getServiceName())
 				&& Constants.PROCESSED_STATE.equals(wfStatusEntity.getCurrentStatus())) {
-			updateProfile(wfRequest);
+			updateProfile(wfRequest, null);
 		}
 	}
 
-	private void updateProfile(WfRequest wfRequest) {
+	private void updateProfile(WfRequest wfRequest, String userToken) {
 		try {
 			String deptNameUpdated = migrationUpdate(wfRequest);
 			Map<String, Object> readData = (Map<String, Object>) userProfileRead(wfRequest.getApplicationId());
@@ -101,7 +101,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 			String rootOrgId = (String) rootOrg.get(Constants.ROOT_ORG_ID);
 
 			if (null != deptNameUpdated) {
-				boolean assignFlag = assignRole(rootOrgId, wfRequest.getApplicationId());
+				boolean assignFlag = assignRole(rootOrgId, wfRequest.getApplicationId(), userToken);
 				if (!assignFlag) {
 					logger.error("Failed to assign PUBLIC role to user after Migration");
 					failedCase(wfRequest);
@@ -395,7 +395,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 		return updatedDeptName;
 	}
 
-	public boolean assignRole(String sbOrgId, String userId) {
+	public boolean assignRole(String sbOrgId, String userId, String userToken) {
 		boolean retValue = false;
 		Map<String, Object> request = new HashMap<>();
 		Map<String, Object> requestBody = new HashMap<String, Object>();
@@ -406,7 +406,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 		StringBuilder builder = new StringBuilder(configuration.getLmsServiceHost());
 		builder.append(configuration.getLmsAssignRoleEndPoint());
 		Map<String, Object> readData = (Map<String, Object>) requestServiceImpl
-				.fetchResultUsingPost(builder, request,Map.class, getHeaders());
+				.fetchResultUsingPost(builder, request, Map.class, getHeadersWithXAuth(userToken));
 		if (Constants.OK.equalsIgnoreCase((String) readData.get(Constants.RESPONSE_CODE))) {
 			retValue = true;
 		}
@@ -468,6 +468,14 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 		HashMap<String, String> headersValue = new HashMap<>();
 		headersValue.put(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
 		return headersValue;
+	}
+
+	private HashMap<String, String> getHeadersWithXAuth(String userToken) {
+		HashMap<String, String> headers = getHeaders();
+		if (StringUtils.isNotEmpty(userToken)) {
+			headers.put(Constants.X_AUTH_TOKEN, userToken);
+		}
+		return headers;
 	}
 
 	private Map<String, Object> getSearchObject(Set<String> userIds) {
@@ -560,7 +568,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 	}
 
 	public void updateUserProfileForBulkUpload(WfRequest wfRequest) {
-		this.updateProfile(wfRequest);
+		this.updateProfile(wfRequest, null);
 	}
 
 	private Map<String, Object> deepCopyObject(Map<String, Object> oldObject) {
@@ -575,7 +583,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 		return null;
 	}
 
-	public void updateUserProfileV2(List<WfRequest> wfRequests, String userId) {
+	public void updateUserProfileV2(List<WfRequest> wfRequests, String userId, String userToken) {
 		try {
 			Map<String, Object> readData = (Map<String, Object>) userProfileRead(userId);
 			if (readData != null && !Constants.OK.equals(readData.get(Constants.RESPONSE_CODE))) {
@@ -601,7 +609,7 @@ public class UserProfileWfServiceImpl implements UserProfileWfService {
 					HashMap<String, Object> toValueList = (HashMap<String, Object>) updatedFieldValueElement.get(Constants.TO_VALUE);
 					for (String key : toValueList.keySet()) {
 						if (Constants.NAME.equals(key) && StringUtils.isNotEmpty((String) toValueList.get(Constants.NAME))) {
-							updateProfile(wfRequest);
+							updateProfile(wfRequest, userToken);
 						} else {
 							Map<String, Object> updateRequest = updateRequestWithWF(wfRequest.getUserId(), wfRequest.getUpdateFieldValues(), profileDetails);
 							isUpdateRequired = true;

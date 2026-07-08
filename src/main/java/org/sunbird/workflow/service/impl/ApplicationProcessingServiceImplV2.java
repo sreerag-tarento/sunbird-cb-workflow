@@ -44,12 +44,12 @@ public class ApplicationProcessingServiceImplV2 {
 
     Logger logger = LogManager.getLogger(ApplicationProcessingServiceImpl.class);
 
-    public void processWfApplicationRequest(List<WfRequest> wfRequests, String serviceName, String userId) {
+    public void processWfApplicationRequest(List<WfRequest> wfRequests, String serviceName, String userId, String userToken) {
         switch (serviceName) {
             // Or condition in case statement
             case Constants.PROFILE_SERVICE_NAME:
             case Constants.USER_PROFILE_FLAG_SERVICE:
-                userProfileWfService.updateUserProfileV2(wfRequests, userId);
+                userProfileWfService.updateUserProfileV2(wfRequests, userId, userToken);
                 break;
             case Constants.USER_REGISTRATION_SERVICE_NAME:
                 wfRequests.forEach(wfRequest -> {

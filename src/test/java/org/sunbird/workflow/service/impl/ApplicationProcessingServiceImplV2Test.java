@@ -49,22 +49,22 @@ class ApplicationProcessingServiceImplV2Test {
     @Test
     void testProcessWfApplicationRequest_Profile() {
         List<WfRequest> requests = List.of(new WfRequest());
-        service.processWfApplicationRequest(requests, Constants.PROFILE_SERVICE_NAME, "user1");
-        verify(userProfileWfService).updateUserProfileV2(requests, "user1");
+        service.processWfApplicationRequest(requests, Constants.PROFILE_SERVICE_NAME, "user1", "token1");
+        verify(userProfileWfService).updateUserProfileV2(requests, "user1", "token1");
     }
 
     @Test
     void testProcessWfApplicationRequest_UserProfileFlag() {
         List<WfRequest> requests = List.of(new WfRequest());
-        service.processWfApplicationRequest(requests, Constants.USER_PROFILE_FLAG_SERVICE, "user1");
-        verify(userProfileWfService).updateUserProfileV2(requests, "user1");
+        service.processWfApplicationRequest(requests, Constants.USER_PROFILE_FLAG_SERVICE, "user1", "token1");
+        verify(userProfileWfService).updateUserProfileV2(requests, "user1", "token1");
     }
 
     @Test
     void testProcessWfApplicationRequest_UserRegistration() {
         WfRequest req = mock(WfRequest.class);
         List<WfRequest> requests = List.of(req);
-        service.processWfApplicationRequest(requests, Constants.USER_REGISTRATION_SERVICE_NAME, "user1");
+        service.processWfApplicationRequest(requests, Constants.USER_REGISTRATION_SERVICE_NAME, "user1", null);
         verify(userRegService).processMessage(req);
     }
 
@@ -72,7 +72,7 @@ class ApplicationProcessingServiceImplV2Test {
     void testProcessWfApplicationRequest_Domain() {
         WfRequest req = mock(WfRequest.class);
         List<WfRequest> requests = List.of(req);
-        service.processWfApplicationRequest(requests, Constants.DOMAIN, "user1");
+        service.processWfApplicationRequest(requests, Constants.DOMAIN, "user1", null);
         verify(domainWhiteListWorkFlowService).processDomainRequest(req);
         verify(bpWorkFlowService).processWFRequest(req);
     }
@@ -81,7 +81,7 @@ class ApplicationProcessingServiceImplV2Test {
     void testProcessWfApplicationRequest_BlendedProgram() {
         WfRequest req = mock(WfRequest.class);
         List<WfRequest> requests = List.of(req);
-        service.processWfApplicationRequest(requests, Constants.BLENDED_PROGRAM_SERVICE_NAME, "user1");
+        service.processWfApplicationRequest(requests, Constants.BLENDED_PROGRAM_SERVICE_NAME, "user1", null);
         verify(bpWorkFlowService).processWFRequest(req);
     }
 
@@ -89,7 +89,7 @@ class ApplicationProcessingServiceImplV2Test {
     void testProcessWfApplicationRequest_OneStepMdo() {
         WfRequest req = mock(WfRequest.class);
         List<WfRequest> requests = List.of(req);
-        service.processWfApplicationRequest(requests, Constants.ONE_STEP_MDO_APPROVAL, "user1");
+        service.processWfApplicationRequest(requests, Constants.ONE_STEP_MDO_APPROVAL, "user1", null);
         verify(bpWorkFlowService).processWFRequest(req);
     }
 
@@ -97,14 +97,14 @@ class ApplicationProcessingServiceImplV2Test {
     void testProcessWfApplicationRequest_TwoStep() {
         WfRequest req = mock(WfRequest.class);
         List<WfRequest> requests = List.of(req);
-        service.processWfApplicationRequest(requests, Constants.TWO_STEP_MDO_AND_PC_APPROVAL, "user1");
+        service.processWfApplicationRequest(requests, Constants.TWO_STEP_MDO_AND_PC_APPROVAL, "user1", null);
         verify(bpWorkFlowService).processWFRequest(req);
     }
 
     @Test
     void testProcessWfApplicationRequest_Default() {
         List<WfRequest> requests = List.of(new WfRequest());
-        service.processWfApplicationRequest(requests, "UNKNOWN", "user1");
+        service.processWfApplicationRequest(requests, "UNKNOWN", "user1", null);
         verifyNoInteractions(userProfileWfService, userRegService, bpWorkFlowService, domainWhiteListWorkFlowService);
     }
 
