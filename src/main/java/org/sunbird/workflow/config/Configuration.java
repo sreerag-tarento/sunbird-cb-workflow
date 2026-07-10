@@ -1025,11 +1025,6 @@ public class Configuration {
         return Arrays.asList(aiAssessmentApproveRejectRoles.split(","));
     }
 
-    public String getSunbirdTimeZone() { return sunbirdTimeZone; }
-
-    public void setSunbirdTimeZone(String sunbirdTimeZone) { this.sunbirdTimeZone = sunbirdTimeZone; }
-
-
     public String getBpBatchStatsTopic() {
         return bpBatchStatsTopic;
     }
@@ -1132,4 +1127,8 @@ public class Configuration {
 
 
 
+
+    public String getSunbirdTimeZone() { return sunbirdTimeZone; }
+
+    public void setSunbirdTimeZone(String sunbirdTimeZone) { this.sunbirdTimeZone = sunbirdTimeZone; }
 }

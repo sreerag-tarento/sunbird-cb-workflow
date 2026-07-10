@@ -36,6 +36,7 @@ class ContentReadServiceImplTest {
 
         Map<String, Object> contentMap = new HashMap<>();
         contentMap.put("wfApprovalType", "someService");
+        contentMap.put("primaryCategory", "Course");
 
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put(Constants.CONTENT, contentMap);
@@ -46,9 +47,11 @@ class ContentReadServiceImplTest {
 
         when(requestService.fetchResultUsingGet(any())).thenReturn(responseMap);
 
-        String result = service.getServiceNameDetails(courseId);
+        Map<String, Object> result = service.getServiceNameDetails(courseId);
 
-        assertEquals("someService", result);
+        assertNotNull(result);
+        assertEquals("someService", result.get("wfApprovalType"));
+        assertEquals("Course", result.get("primaryCategory"));
     }
 
     @Test
@@ -60,7 +63,7 @@ class ContentReadServiceImplTest {
 
         when(requestService.fetchResultUsingGet(any())).thenReturn(null);
 
-        String result = service.getServiceNameDetails(courseId);
+        Map<String, Object> result = service.getServiceNameDetails(courseId);
 
         assertNull(result);
     }
@@ -74,7 +77,7 @@ class ContentReadServiceImplTest {
 
         when(requestService.fetchResultUsingGet(any())).thenThrow(new RuntimeException("error"));
 
-        String result = service.getServiceNameDetails(courseId);
+        Map<String, Object> result = service.getServiceNameDetails(courseId);
 
         assertNull(result);
     }

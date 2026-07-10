@@ -40,6 +40,8 @@ import org.sunbird.workflow.utils.UserUtil;
 import java.io.*;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 @Service
@@ -80,8 +82,12 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         validateWfRequestMultilevelEnrol(wfRequest);
         Map<String, Object> courseBatchDetails = getCurrentBatchAttributes(wfRequest.getApplicationId(),
                 wfRequest.getCourseId());
-        String serviceName = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
-        if (serviceName == null || serviceName.isEmpty()) {
+        Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
+        String serviceName = null;
+        if (MapUtils.isNotEmpty(courseDetails) && null != courseDetails.get(Constants.WF_APPROVAL_TYPE)) {
+            serviceName = (String) courseDetails.get(Constants.WF_APPROVAL_TYPE);
+        }
+        if (StringUtils.isBlank(serviceName)) {
             serviceName = Constants.BLENDED_PROGRAM_SERVICE_NAME;
         }
         int totalUserEnrolCount = getTotalUserEnrolCountForBatch(wfRequest.getApplicationId());
@@ -355,7 +361,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         boolean nonEnrolmentState = configuration.getBpBatchFullValidationExcludeStates().contains(wfRequest.getAction());
         if(nonEnrolmentState)
             return "";
-        boolean batchStartDateValid = validateBatchStartDate(courseBatchDetails);
+        boolean batchStartDateValid = validateBatchStartDate(courseBatchDetails, wfRequest.getServiceName(), batchDetailsMap);
         if(!batchStartDateValid)
             return Constants.BATCH_START_DATE_ERROR;
         boolean batchSizeValidation =  validateBatchEnrolment(courseBatchDetails, getTotalApprovedUserCount(wfRequest), 0,
@@ -366,8 +372,21 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
     }
 
 
-    private boolean validateBatchStartDate(Map<String, Object> courseBatchDetails) {
-        Date batchStartDate = ((Date)courseBatchDetails.get(Constants.START_DATE));
+    private boolean validateBatchStartDate(Map<String, Object> courseBatchDetails, String serviceName, Map<String, Object> batchDetailsMap) {
+        Date batchStartDate = ((Date) courseBatchDetails.get(Constants.START_DATE));
+        String primaryCategory = null;
+        if(batchDetailsMap.containsKey(Constants.PRIMARY_CATEGORY)) {
+            primaryCategory = (String) batchDetailsMap.get(Constants.PRIMARY_CATEGORY);
+        }
+
+        if (Constants.BLENDED_PROGRAM_SERVICE_NAME.equalsIgnoreCase(serviceName) || Constants.BLENDED_PROGRAM.equalsIgnoreCase(primaryCategory)) {
+            LocalDate batchStartLocalDate = batchStartDate.toInstant()
+                    .atZone(ZoneId.of(configuration.getSunbirdTimeZone()))
+                    .toLocalDate();
+            LocalDate currentLocalDate = LocalDate.now(ZoneId.of(configuration.getSunbirdTimeZone()));
+            logger.info("Batch Start LocalDate: {}, Current LocalDate: {}", batchStartLocalDate, currentLocalDate);
+            return !batchStartLocalDate.isBefore(currentLocalDate);
+        }
         return batchStartDate.after(new Date());
     }
 
@@ -501,7 +520,11 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
     public Response adminEnrolBPWorkFlow(String rootOrg, String org, WfRequest wfRequest) {
         Map<String, Object> courseBatchDetails = getCurrentBatchAttributes(wfRequest.getApplicationId(),
                 wfRequest.getCourseId());
-        String serviceName = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
+        Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
+        String serviceName = null;
+        if (courseDetails != null && courseDetails.get("wfApprovalType") != null) {
+            serviceName = (String) courseDetails.get("wfApprovalType");
+        }
         if (serviceName == null || serviceName.isEmpty()) {
             serviceName = Constants.BLENDED_PROGRAM_SERVICE_NAME;
         }
@@ -834,7 +857,11 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
      * @param wfRequest - WorkFlow request which needs to be processed.
      */
     private void handleEnrollmentRequest(WfRequest wfRequest) {
-        String serviceName = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
+        Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
+        String serviceName = null;
+        if (courseDetails != null && courseDetails.get("wfApprovalType") != null) {
+            serviceName = (String) courseDetails.get("wfApprovalType");
+        }
         if (serviceName == null || serviceName.isEmpty()) {
             serviceName = wfRequest.getServiceName();
         }
@@ -1573,7 +1600,13 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
             String programId = (String) requestBody.get(Constants.COURSE_ID);
             String batchId = (String) requestBody.get(Constants.BATCH_ID);
             String deptName = (String) requestBody.get(Constants.DEPT_NAME);
-            String wfApproveType = contentReadService.getServiceNameDetails(programId);
+            Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(programId);
+            String wfApproveType = null;
+            String primaryCategory = null;
+            if (MapUtils.isNotEmpty(courseDetails)) {
+                wfApproveType = (String) courseDetails.get(Constants.WF_APPROVAL_TYPE);
+                primaryCategory = (String) courseDetails.get(Constants.PRIMARY_CATEGORY);
+            }
             if (StringUtils.isBlank(wfApproveType)) {
                 wfApproveType = Constants.BLENDED_PROGRAM_SERVICE_NAME;
             }
@@ -1659,6 +1692,9 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
                 }
 
                 Map<String, Object> batchDetailsMap = new HashMap<>();
+                if(StringUtils.isNotEmpty(primaryCategory)) {
+                    batchDetailsMap.put(Constants.PRIMARY_CATEGORY, primaryCategory);
+                }
                 String validationError = validateBatchUserRequestAccess(wfRequest, batchDetailsMap);
                 wfRequest.setBatchName((String) batchDetailsMap.get(Constants.BATCH_NAME));
                 wfRequest.setBatchStartDate((Date) batchDetailsMap.get(Constants.START_DATE));
