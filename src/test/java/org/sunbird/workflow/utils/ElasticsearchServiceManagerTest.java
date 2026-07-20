@@ -1,6 +1,7 @@
 package org.sunbird.workflow.utils;
 
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -285,5 +286,56 @@ class ElasticsearchServiceManagerTest {
 
         boolean result = service.updateWfRequestObject("wf1", "user1", "dept1", "attr1", false);
         assertFalse(result);
+    }
+
+
+    @Test
+    void testReadEntity_Success() throws Exception {
+        // Arrange
+        String index = "user";
+        String indexType = "_doc";
+        String entityId = "123";
+
+        GetResponse response = Mockito.mock(GetResponse.class);
+
+        Map<String, Object> source = new HashMap<>();
+        source.put("name", "TestUser");
+
+        when(response.getSourceAsMap()).thenReturn(source);
+        when(client.get(any(GetRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(response);
+
+        // Act
+        Map<String, Object> result = service.readEntity(index, indexType, entityId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("TestUser", result.get("name"));
+
+        verify(client).get(any(GetRequest.class), eq(RequestOptions.DEFAULT));
+    }
+
+    @Test
+    void testReadEntity_WhenResponseIsNull_ReturnsNull() throws Exception {
+
+        when(client.get(any(GetRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(null);
+
+        Map<String, Object> result =
+                service.readEntity("user", "_doc", "123");
+
+        assertNull(result);
+    }
+
+    @Test
+    void testReadEntity_WhenIOException_ReturnsNull() throws Exception {
+
+        when(client.get(any(GetRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenThrow(new IOException("Connection failed"));
+
+        Map<String, Object> result =
+                service.readEntity("user", "_doc", "123");
+
+        assertNull(result);
     }
 }

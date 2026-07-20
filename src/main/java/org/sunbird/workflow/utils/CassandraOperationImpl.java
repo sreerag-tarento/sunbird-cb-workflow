@@ -262,4 +262,20 @@ public class CassandraOperationImpl implements CassandraOperation {
         }
         return response;
     }
+
+    @Override
+    public Map<String, Object> getRecordsByProperties(String keyspaceName, String tableName,
+                                                      Map<String, Object> propertyMap, List<String> fields, String key) {
+        Select selectQuery = null;
+        Map<String, Object> response = new HashMap<>();
+        try {
+            selectQuery = processQuery(keyspaceName, tableName, propertyMap, fields);
+            ResultSet results = connectionManager.getSession(keyspaceName).execute(selectQuery.build());
+            response = CassandraUtil.createResponse(results, key);
+
+        } catch (Exception e) {
+            logger.error(Constants.EXCEPTION_MSG_FETCH + tableName + " : " + e.getMessage(), e);
+        }
+        return response;
+    }
 }

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,7 @@ import org.sunbird.workflow.service.BPWorkFlowService;
 import org.sunbird.workflow.service.ContentReadService;
 import org.sunbird.workflow.service.Workflowservice;
 import org.sunbird.workflow.utils.CassandraOperation;
+import org.sunbird.workflow.utils.ElasticsearchServiceManager;
 import org.sunbird.workflow.utils.UserUtil;
 
 import java.io.*;
@@ -77,12 +79,29 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
     @Autowired
     private UserUtil userUtils;
 
+    @Autowired
+    ElasticsearchServiceManager elasticsearchServiceManager;
+
+    @Value("${es.org.eligibility.index}")
+    private String orgeligibilityIndex;
+
+    @Value("${es.org.eligibility.index.type}")
+    private String orgeligibilityIndexType;
+
+
     @Override
     public Response enrolBPWorkFlow(String rootOrg, String org, WfRequest wfRequest) {
         validateWfRequestMultilevelEnrol(wfRequest);
         Map<String, Object> courseBatchDetails = getCurrentBatchAttributes(wfRequest.getApplicationId(),
                 wfRequest.getCourseId());
         Map<String, Object> courseDetails = contentReadService.getServiceNameDetails(wfRequest.getCourseId());
+        // is the course applicable for the volunteer to enroll
+        if (isVolunteerUser(wfRequest.getUserId()) && !isCourseEligibleForOrg(rootOrg, wfRequest.getCourseId())) {
+            Response response = new Response();
+            response.put(Constants.ERROR_MESSAGE,  Constants.VOLUNTEER_NOT_ELIGIBLE_TO_ENROLL);
+            response.put(Constants.STATUS, HttpStatus.NOT_ACCEPTABLE);
+            return response;
+        }
         String serviceName = null;
         if (MapUtils.isNotEmpty(courseDetails) && null != courseDetails.get(Constants.WF_APPROVAL_TYPE)) {
             serviceName = (String) courseDetails.get(Constants.WF_APPROVAL_TYPE);
@@ -1915,6 +1934,37 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         applicationStatus.setLastUpdatedOn(new Date());
         applicationStatus.setCurrentStatus(Constants.SEND_FOR_PC_APPROVAL);
         WfStatusEntity savedEntity = wfStatusRepo.save(applicationStatus);
+    }
+
+    private boolean isVolunteerUser(String userUUID) {
+        Map<String, Object> response = cassandraOperation.getRecordsByProperties(
+                Constants.KEYSPACE_SUNBIRD,
+                Constants.TABLE_USER_ROLES,
+                Collections.singletonMap(Constants.USER_ID, userUUID),
+                Arrays.asList(Constants.ROLE, Constants.USER_ID),null);
+
+        List<Map<String, Object>> userRoles = (List<Map<String, Object>>) response.get(Constants.RESPONSE);
+
+        return !CollectionUtils.isEmpty(userRoles)
+                && userRoles.stream().anyMatch(roleMap ->
+                Constants.ROLE_VOLUNTEER.equalsIgnoreCase((String) roleMap.get(Constants.ROLE)));
+    }
+
+    private boolean isCourseEligibleForOrg(String orgId, String courseId){
+
+        Map<String, Object> eligibility = elasticsearchServiceManager.readEntity(
+                orgeligibilityIndex,
+                orgeligibilityIndexType,
+                orgId);
+
+        if (MapUtils.isEmpty(eligibility)) {
+            return false;
+        }
+
+        List<String> courseIds = (List<String>) eligibility.get(Constants.COURSEIDS);
+        logger.info("courseIds in orgEligibilityIndex -> " + courseIds.toString());
+        return !CollectionUtils.isEmpty(courseIds)
+                && courseIds.contains(courseId);
     }
 
 }

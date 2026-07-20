@@ -489,4 +489,9 @@ public class Constants {
 	public static final String FACETS = "facets";
 	public static final String SORT_BY = "sort_by";
 
+	public static final String COURSEIDS= "courseids";
+	public static final String ROLE_VOLUNTEER = "VOLUNTEER";
+	public static final String TABLE_USER_ROLES = "user_roles";
+	public static final String ROLE = "role";
+	public static final String VOLUNTEER_NOT_ELIGIBLE_TO_ENROLL = "User is not eligible to enrol into this course.";
 }

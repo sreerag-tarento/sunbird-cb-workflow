@@ -16,4 +16,6 @@ public interface CassandraOperation {
 
 	Map<String, Object> updateRecord(String keyspaceName, String tableName, Map<String, Object> updateAttributes,
 									 Map<String, Object> compositeKey);
+	Map<String, Object> getRecordsByProperties(String keyspaceName, String tableName,
+	                                                  Map<String, Object> propertyMap, List<String> fields, String key);
 }

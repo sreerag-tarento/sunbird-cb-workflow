@@ -10,6 +10,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -314,5 +315,25 @@ public class ElasticsearchServiceManager {
             logger.error("Failed to update {} for userId: {}", attributeName, userId, e);
             return false;
         }
+    }
+
+
+    /**
+     * @param index     name of index
+     * @param indexType index type
+     * @param entityId  entity Id
+     * @return status
+     */
+    public Map<String, Object> readEntity(String index, String indexType, String entityId) {
+        logger.info("readEntity starts with index {} and entityId {}", index, entityId);
+        GetResponse response = null;
+        try {
+            response = client.get(new GetRequest(index, indexType, entityId), RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            logger.error("Exception in getting the record from ElasticSearch", e);
+        }
+        if (null == response)
+            return null;
+        return response.getSourceAsMap();
     }
 }

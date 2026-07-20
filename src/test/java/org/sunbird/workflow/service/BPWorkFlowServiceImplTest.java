@@ -72,6 +72,9 @@ class BPWorkFlowServiceImplTest {
     @Mock
     private UserUtil userUtils;
 
+    @Mock
+    private org.sunbird.workflow.utils.ElasticsearchServiceManager elasticsearchServiceManager;
+
     private WfRequest wfRequest;
     private Response mockResponse;
 
@@ -242,6 +245,13 @@ class BPWorkFlowServiceImplTest {
         when(mapper.writeValueAsString(any())).thenReturn("updateFieldValue");
         when(configuration.getWorkflowApplicationTopic()).thenReturn("wf-topic");
 
+        when(cassandraOperation.getRecordsByProperties(
+                eq(Constants.KEYSPACE_SUNBIRD),
+                eq(Constants.TABLE_USER_ROLES),
+                eq(Collections.singletonMap(Constants.USER_ID, wfRequest.getUserId())),
+                eq(Arrays.asList(Constants.ROLE, Constants.USER_ID)),
+                isNull()
+        )).thenReturn(Collections.emptyMap());
         // Set up enrolment batch lookup response
         when(cassandraOperation.getRecordsByProperties(
                 eq(Constants.KEYSPACE_SUNBIRD_COURSES),
@@ -292,6 +302,35 @@ class BPWorkFlowServiceImplTest {
     }
 
     @Test
+    void testIsCourseEligibleForOrg_true() {
+        String orgId = "org-elig-1";
+        String courseId = COURSE_ID;
+        ReflectionTestUtils.setField(bpWorkFlowService, "orgeligibilityIndex", "org_elig_index");
+        ReflectionTestUtils.setField(bpWorkFlowService, "orgeligibilityIndexType", "_doc");
+
+        Map<String, Object> eligibility = new HashMap<>();
+        eligibility.put(Constants.COURSEIDS, Arrays.asList(courseId));
+
+        when(elasticsearchServiceManager.readEntity(eq("org_elig_index"), eq("_doc"), eq(orgId))).thenReturn(eligibility);
+
+        boolean result = (boolean) ReflectionTestUtils.invokeMethod(bpWorkFlowService, "isCourseEligibleForOrg", orgId, courseId);
+        assertTrue(result);
+    }
+
+    @Test
+    void testIsCourseEligibleForOrg_false_when_no_entry() {
+        String orgId = "org-elig-2";
+        String courseId = "some-other-course";
+        ReflectionTestUtils.setField(bpWorkFlowService, "orgeligibilityIndex", "org_elig_index");
+        ReflectionTestUtils.setField(bpWorkFlowService, "orgeligibilityIndexType", "_doc");
+
+        when(elasticsearchServiceManager.readEntity(eq("org_elig_index"), eq("_doc"), eq(orgId))).thenReturn(Collections.emptyMap());
+
+        boolean result = (boolean) ReflectionTestUtils.invokeMethod(bpWorkFlowService, "isCourseEligibleForOrg", orgId, courseId);
+        assertFalse(result);
+    }
+
+    @Test
     void enrolBPWorkFlow_success_1() throws Exception {
         wfRequest = getRequest();
 
@@ -305,6 +344,14 @@ class BPWorkFlowServiceImplTest {
         when(configuration.getBpBatchEnrolLimitBufferSize()).thenReturn(20);
         when(mapper.writeValueAsString(any())).thenReturn("updateFieldValue");
         when(configuration.getWorkflowApplicationTopic()).thenReturn("wf-topic");
+
+        when(cassandraOperation.getRecordsByProperties(
+                eq(Constants.KEYSPACE_SUNBIRD),
+                eq(Constants.TABLE_USER_ROLES),
+                eq(Collections.singletonMap(Constants.USER_ID, wfRequest.getUserId())),
+                eq(Arrays.asList(Constants.ROLE, Constants.USER_ID)),
+                isNull()
+        )).thenReturn(Collections.emptyMap());
 
         // Set up enrolment batch lookup response
         when(cassandraOperation.getRecordsByProperties(
