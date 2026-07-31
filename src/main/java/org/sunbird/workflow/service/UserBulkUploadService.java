@@ -39,6 +39,7 @@ import org.sunbird.workflow.postgres.entity.WfStatusEntity;
 import org.sunbird.workflow.postgres.repo.WfStatusRepo;
 import org.sunbird.workflow.service.impl.RequestServiceImpl;
 import org.sunbird.workflow.utils.CassandraOperation;
+import org.sunbird.workflow.utils.UserUtil;
 import org.sunbird.workflow.utils.ValidationUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -75,6 +76,9 @@ public class UserBulkUploadService {
 
     @Autowired
     RedisCacheMgr redisCacheMgr;
+
+    @Autowired
+    private UserUtil userUtil;
 
     public void initiateUserBulkUploadProcess(String inputData) {
         logger.info("UserBulkUploadService:: initiateUserBulkUploadProcess: Started");
@@ -1039,58 +1043,17 @@ public class UserBulkUploadService {
                         continue;
                     }
 
-                    Set<String> employmentDetailsKey = new HashSet<>();
-                    employmentDetailsKey.add(Constants.EMPLOYEE_CODE);
-                    employmentDetailsKey.add(Constants.PIN_CODE);
-
-                    Set<String> professionalDetailsKey = new HashSet<>();
-                    professionalDetailsKey.add(Constants.GROUP);
-                    professionalDetailsKey.add(Constants.DESIGNATION);
-
-                    Set<String> personalDetailsKey = new HashSet<>();
-                    personalDetailsKey.add(Constants.FIRSTNAME);
-                    personalDetailsKey.add(Constants.DOB);
-                    personalDetailsKey.add(Constants.DOMICILE_MEDIUM);
-                    personalDetailsKey.add(Constants.CATEGORY);
-                    personalDetailsKey.add(Constants.GENDER);
-                    personalDetailsKey.add(Constants.MOBILE);
-
-                    WfRequest wfRequest = this.getWFRequest(valuesToBeUpdate, userId);
-                    List<HashMap<String, Object>> updatedValues = new ArrayList<>();
-                    for (Map.Entry<String, Object> entry : valuesToBeUpdate.entrySet()) {
-                        String fieldKey;
-                        HashMap<String, Object> updatedValueMap = new HashMap<>();
-                        updatedValueMap.put(entry.getKey(), entry.getValue());
-                        HashMap<String, Object> updateValues = new HashMap<>();
-                        updateValues.put(Constants.FROM_VALUE, new HashMap<>());
-                        updateValues.put(Constants.TO_VALUE, updatedValueMap);
-                        if (employmentDetailsKey.contains(entry.getKey())) {
-                            fieldKey = Constants.EMPLOYMENT_DETAILS;
-                        } else if (professionalDetailsKey.contains(entry.getKey())) {
-                            fieldKey = Constants.PROFESSIONAL_DETAILS;
-                        } else if (personalDetailsKey.contains(entry.getKey())) {
-                            fieldKey = Constants.PERSONAL_DETAILS;
-                        } else {
-                            fieldKey = Constants.ADDITIONAL_PROPERTIES;
-                        }
-                        updateValues.put(Constants.FIELD_KEY, fieldKey);
-                        updatedValues.add(updateValues);
-                        if (null != wfRequest) {
-                            wfRequest.setUpdateFieldValues(updatedValues);
-                        }
-                    }
-                    userProfileWfService.updateUserProfileForBulkUpload(wfRequest);
-                    WfStatusEntity wfStatusEntityFailed = wfStatusRepo.findByWfId(wfRequest.getWfId());
-                    if (null != wfStatusEntityFailed && Constants.REJECTED.equalsIgnoreCase(wfStatusEntityFailed.getCurrentStatus())) {
+                    if (!updateBulkUserProfile(userId, valuesToBeUpdate)) {
                         userRecordUpdate = false;
                     }
+
                     if (userRecordUpdate) {
                         noOfSuccessfulRecords++;
                         csvValues.put("Status", Constants.SUCCESSFUL_UPERCASE);
                         csvValues.put("Error Details", "NA");
                     } else {
                         failedRecordsCount++;
-                        csvValues.put("Status", Constants.UPDATE_FAILED);
+                        csvValues.put("Status", Constants.FAILED_UPPERCASE);
                         csvValues.put("Error Details", Constants.UPDATE_FAILED);
                     }
                     totalRecordsCount++;
@@ -1152,6 +1115,123 @@ public class UserBulkUploadService {
                 file.delete();
         }
         }
+
+    private HashMap<String, String> getHeaders() {
+        HashMap<String, String> headersValue = new HashMap<>();
+        headersValue.put(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
+        return headersValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean updateBulkUserProfile(String userId, Map<String, Object> valuesToBeUpdate) {
+        // UserUtil returns the inner result.response object, not the API response envelope.
+        Map<String, Object> userResponse = userUtil.userProfileRead(userId);
+        if (MapUtils.isEmpty(userResponse)) {
+            logger.error("Unable to read profile for userId: {}", userId);
+            return false;
+        }
+
+        Map<String, Object> profileDetails = getOrCreateMap(userResponse, Constants.PROFILE_DETAILS);
+        if (profileDetails == null) {
+            logger.error("Invalid profile-details structure for userId: {}", userId);
+            return false;
+        }
+
+        Map<String, Object> personalDetails = getOrCreateMap(profileDetails, Constants.PERSONAL_DETAILS);
+        Map<String, Object> employmentDetails = getOrCreateMap(profileDetails, Constants.EMPLOYMENT_DETAILS);
+        Map<String, Object> additionalProperties = getOrCreateMap(profileDetails, Constants.ADDITIONAL_PROPERTIES);
+        Map<String, Object> professionalDetails = getOrCreateFirstProfessionalDetail(profileDetails);
+
+        if (personalDetails == null || employmentDetails == null
+                || additionalProperties == null || professionalDetails == null) {
+            logger.error("Invalid profile-details structure for userId: {}", userId);
+            return false;
+        }
+
+        for (Map.Entry<String, Object> entry : valuesToBeUpdate.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            if (isPersonalDetail(key)) {
+                personalDetails.put(key, value);
+            } else if (isProfessionalDetail(key)) {
+                professionalDetails.put(key, value);
+            } else if (isEmploymentDetail(key)) {
+                employmentDetails.put(key, value);
+            } else {
+                additionalProperties.put(key, value);
+            }
+        }
+
+        Map<String, Object> request = new HashMap<>();
+        request.put(Constants.USER_ID, userId);
+        request.put(Constants.PROFILE_DETAILS, profileDetails);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put(Constants.REQUEST, request);
+
+        Map<String, Object> updateResponse = requestServiceImpl.fetchResultUsingPatch(
+                configuration.getLmsServiceHost() + configuration.getUserProfileUpdateEndPoint(),
+                requestBody,
+                getHeaders());
+
+        return updateResponse != null
+                && Constants.OK.equals(updateResponse.get(Constants.RESPONSE_CODE));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getOrCreateMap(Map<String, Object> parent, String key) {
+        Object value = parent.get(key);
+        if (value == null) {
+            Map<String, Object> newValue = new HashMap<>();
+            parent.put(key, newValue);
+            return newValue;
+        }
+        return value instanceof Map<?, ?> ? (Map<String, Object>) value : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getOrCreateFirstProfessionalDetail(Map<String, Object> profileDetails) {
+        Object value = profileDetails.get(Constants.PROFESSIONAL_DETAILS);
+        if (value == null) {
+            List<Map<String, Object>> details = new ArrayList<>();
+            Map<String, Object> detail = new HashMap<>();
+            details.add(detail);
+            profileDetails.put(Constants.PROFESSIONAL_DETAILS, details);
+            return detail;
+        }
+        if (!(value instanceof List<?>)) {
+            return null;
+        }
+
+        List<?> details = (List<?>) value;
+        if (details.isEmpty()) {
+            Map<String, Object> detail = new HashMap<>();
+            ((List<Map<String, Object>>) details).add(detail);
+            return detail;
+        }
+        return details.get(0) instanceof Map<?, ?>
+                ? (Map<String, Object>) details.get(0)
+                : null;
+    }
+
+    private boolean isPersonalDetail(String key) {
+        return Constants.FIRSTNAME.equals(key)
+                || Constants.DOB.equals(key)
+                || Constants.GENDER.equals(key)
+                || Constants.CATEGORY.equals(key)
+                || Constants.DOMICILE_MEDIUM.equals(key)
+                || Constants.MOBILE.equals(key);
+    }
+
+    private boolean isProfessionalDetail(String key) {
+        return Constants.GROUP.equals(key) || Constants.DESIGNATION.equals(key);
+    }
+
+    private boolean isEmploymentDetail(String key) {
+        return Constants.EMPLOYEE_CODE.equals(key) || Constants.PIN_CODE.equals(key);
+    }
+
 
     private String uploadTheUpdatedCSVFile(File file)
             throws IOException {

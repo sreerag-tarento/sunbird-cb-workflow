@@ -1,6 +1,6 @@
 package org.sunbird.workflow.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -19,9 +19,11 @@ import org.sunbird.workflow.service.StorageService;
 import org.sunbird.workflow.service.UserBulkUploadService;
 import org.sunbird.workflow.service.UserProfileWfService;
 import org.sunbird.workflow.utils.CassandraOperation;
+import org.sunbird.workflow.utils.UserUtil;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +57,9 @@ class UserBulkUploadServiceTest {
 
     @Mock
     private RedisCacheMgr redisCacheMgr;
+
+    @Mock
+    private UserUtil userUtil;
 
     private final String rootOrgId = "root-org-id";
     private final String identifier = "bulk-id";
@@ -218,5 +223,49 @@ class UserBulkUploadServiceTest {
         when(requestServiceImpl.fetchResultUsingPost(any(), any(), any(), any())).thenReturn(response);
         boolean result = userBulkUploadService.validateDesignationFieldValue("ExistingDesignation");
         org.junit.jupiter.api.Assertions.assertFalse(result);
+    }
+
+    @Test
+    void updateBulkUserProfile_createsMissingAdditionalPropertiesAndPatchesLms() throws Exception {
+        Map<String, Object> profileDetails = new HashMap<>();
+        profileDetails.put(Constants.PERSONAL_DETAILS, new HashMap<String, Object>());
+        profileDetails.put(Constants.EMPLOYMENT_DETAILS, new HashMap<String, Object>());
+        profileDetails.put(Constants.PROFESSIONAL_DETAILS, new java.util.ArrayList<Map<String, Object>>());
+
+        Map<String, Object> userResponse = new HashMap<>();
+        userResponse.put(Constants.PROFILE_DETAILS, profileDetails);
+        when(userUtil.userProfileRead("user-123")).thenReturn(userResponse);
+        when(configuration.getLmsServiceHost()).thenReturn("http://lms.example.com");
+        when(configuration.getUserProfileUpdateEndPoint()).thenReturn("/user/v1/update");
+        when(requestServiceImpl.fetchResultUsingPatch(anyString(), anyMap(), anyMap()))
+                .thenReturn(Collections.singletonMap(Constants.RESPONSE_CODE, Constants.OK));
+
+        Map<String, Object> valuesToBeUpdated = new HashMap<>();
+        valuesToBeUpdated.put("tagKey", "tagValue");
+
+        assertTrue(invokeUpdateBulkUserProfile("user-123", valuesToBeUpdated));
+
+        Map<String, Object> additionalProperties =
+                (Map<String, Object>) profileDetails.get(Constants.ADDITIONAL_PROPERTIES);
+        assertNotNull(additionalProperties);
+        assertEquals("tagValue", additionalProperties.get("tagKey"));
+        verify(requestServiceImpl).fetchResultUsingPatch(
+                eq("http://lms.example.com/user/v1/update"), anyMap(), anyMap());
+    }
+
+    @Test
+    void updateBulkUserProfile_returnsFalseWhenProfileReadFails() throws Exception {
+        when(userUtil.userProfileRead("user-123")).thenReturn(null);
+
+        assertFalse(invokeUpdateBulkUserProfile("user-123", Collections.emptyMap()));
+        verify(requestServiceImpl, never()).fetchResultUsingPatch(anyString(), anyMap(), anyMap());
+    }
+
+    private boolean invokeUpdateBulkUserProfile(String userId, Map<String, Object> valuesToBeUpdated)
+            throws Exception {
+        Method method = UserBulkUploadService.class.getDeclaredMethod(
+                "updateBulkUserProfile", String.class, Map.class);
+        method.setAccessible(true);
+        return (boolean) method.invoke(userBulkUploadService, userId, valuesToBeUpdated);
     }
 }
