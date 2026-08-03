@@ -737,7 +737,15 @@ public class UserBulkUploadService {
                 reader = new BufferedReader(new FileReader(file));
                 char csvDelimiter = configuration.getCsvDelimiter();
                 String tagsDelimiter =  configuration.getTagsDelimiter();
-                csvParser = new CSVParser(reader,CSVFormat.newFormat(csvDelimiter).withFirstRecordAsHeader());
+                CSVFormat csvFormat = CSVFormat.RFC4180.builder()
+                        .setDelimiter(csvDelimiter)
+                        .setHeader()
+                        .setSkipHeaderRecord(true)
+                        .setQuote('"')
+                        .setIgnoreSurroundingSpaces(true)
+                        .setTrim(true)
+                        .build();
+                csvParser = new CSVParser(reader, csvFormat);
                 List<CSVRecord> csvRecords = csvParser.getRecords();
                 List<Map<String, Object>> updatedRecords = new ArrayList<>();
                 List<String> headers = new ArrayList<>(csvParser.getHeaderNames());
@@ -1064,7 +1072,14 @@ public class UserBulkUploadService {
                     // Write back updated records to the same CSV file
                     fileWriter = new FileWriter(file);
                     bufferedWriter = new BufferedWriter(fileWriter);
-                    csvPrinter = new CSVPrinter(bufferedWriter,CSVFormat.newFormat(csvDelimiter).withHeader(headers.toArray(new String[0])).withRecordSeparator(System.lineSeparator()));
+                    CSVFormat outputFormat = CSVFormat.RFC4180.builder()
+                            .setDelimiter(csvDelimiter)
+                            .setHeader(headers.toArray(new String[0]))
+                            .setRecordSeparator(System.lineSeparator())
+                            .setQuote('"')
+                            .setQuoteMode(org.apache.commons.csv.QuoteMode.MINIMAL)
+                            .build();
+                    csvPrinter = new CSVPrinter(bufferedWriter, outputFormat);
 
 
                 for (Map<String, Object> record : updatedRecords) {

@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1259,20 +1261,27 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         List<Map<String, String>> validRows = new ArrayList<>();
         final List<String> expectedHeaders = List.of(Constants.EMAIL, Constants.USER_NAME, Constants.WF_ID_CONSTANT, Constants.USER_ID, Constants.ACTION_APPROVE_REJECT);
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            String line;
-            boolean isFirstLine = true;
+        CSVFormat csvFormat = CSVFormat.RFC4180.builder()
+                .setDelimiter(',')
+                .setQuote('"')
+                .setIgnoreSurroundingSpaces(true)
+                .setTrim(true)
+                .build();
+
+        try (Reader reader = new InputStreamReader(file.getInputStream());
+             CSVParser csvParser = new CSVParser(reader, csvFormat)) {
+            List<CSVRecord> records = csvParser.getRecords();
+            if (records.isEmpty()) {
+                return validRows;
+            }
+
+            List<String> actualHeaders = parseAndValidateHeaders(records.get(0), expectedHeaders, errors);
+            if (!errors.isEmpty()) return validRows;
+
             int rowNumber = 1;
-            List<String> actualHeaders = new ArrayList<>();
-            while ((line = reader.readLine()) != null) {
-                if (isFirstLine) {
-                    actualHeaders = parseAndValidateHeaders(line, expectedHeaders, errors);
-                    if (!errors.isEmpty()) return validRows;
-                    isFirstLine = false;
-                    continue;
-                }
+            for (int i = 1; i < records.size(); i++) {
                 rowNumber++;
-                Map<String, String> row = processDataRow(line, actualHeaders, rowNumber, errors);
+                Map<String, String> row = processDataRow(records.get(i), actualHeaders, rowNumber, errors);
                 if (row != null) {
                     validRows.add(row);
                 }
@@ -1284,8 +1293,8 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         return validRows;
     }
 
-    private List<String> parseAndValidateHeaders(String headerLine, List<String> expectedHeaders, List<String> errors) {
-        List<String> actualHeaders = Arrays.stream(headerLine.split(","))
+    private List<String> parseAndValidateHeaders(CSVRecord headerRecord, List<String> expectedHeaders, List<String> errors) {
+        List<String> actualHeaders = headerRecord.toList().stream()
                 .map(String::trim)
                 .toList();
         List<String> missingHeaders = expectedHeaders.stream()
@@ -1298,9 +1307,9 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         return actualHeaders;
     }
 
-    private Map<String, String> processDataRow(String line, List<String> expectedHeaders, int rowNumber, List<String> errors) {
-        String[] tokens = line.split(",", -1); // keep empty strings
-        if (tokens.length < expectedHeaders.size()) {
+    private Map<String, String> processDataRow(CSVRecord record, List<String> expectedHeaders, int rowNumber, List<String> errors) {
+        List<String> tokens = record.toList();
+        if (tokens.size() < expectedHeaders.size()) {
             errors.add("Row " + rowNumber + " is incomplete: expected " + expectedHeaders.size() + " columns.");
             return null;
         }
@@ -1308,7 +1317,7 @@ public class BPWorkFlowServiceImpl implements BPWorkFlowService {
         Map<String, String> row = new HashMap<>();
         for (int i = 0; i < expectedHeaders.size(); i++) {
             String key = expectedHeaders.get(i);
-            String value = i < tokens.length ? tokens[i].trim() : "";
+            String value = i < tokens.size() ? tokens.get(i).trim() : "";
             row.put(key, value);
         }
             List<String> otherEmptyFields = expectedHeaders.stream()

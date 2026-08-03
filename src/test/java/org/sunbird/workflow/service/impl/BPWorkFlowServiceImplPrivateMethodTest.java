@@ -1,6 +1,9 @@
 package org.sunbird.workflow.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,11 +127,21 @@ class BPWorkFlowServiceImplPrivateMethodTest {
         assertEquals(Constants.NOT_UPDATED, resultStr);
     }
 
+    private CSVRecord parseSingleRecord(String line) throws Exception {
+        CSVFormat csvFormat = CSVFormat.RFC4180.builder()
+                .setDelimiter(',')
+                .setQuote('"')
+                .setIgnoreSurroundingSpaces(true)
+                .setTrim(true)
+                .build();
+        return CSVParser.parse(line, csvFormat).getRecords().get(0);
+    }
+
     private Map<String, String> invokeProcessDataRow(String line, List<String> headers, int rowNumber, List<String> errors) throws Exception {
         Method method = BPWorkFlowServiceImpl.class.getDeclaredMethod(
-                "processDataRow", String.class, List.class, int.class, List.class);
+                "processDataRow", CSVRecord.class, List.class, int.class, List.class);
         method.setAccessible(true);
-        return (Map<String, String>) method.invoke(bpWorkFlowService, line, headers, rowNumber, errors);
+        return (Map<String, String>) method.invoke(bpWorkFlowService, parseSingleRecord(line), headers, rowNumber, errors);
     }
 
     @Test
